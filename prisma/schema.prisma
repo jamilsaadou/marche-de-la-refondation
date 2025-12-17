@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model DemandeExposant {
+  id                     String   @id @default(cuid())
+  numeroReference        String   @unique
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  status                 String   @default("EN_ATTENTE") // EN_ATTENTE, APPROUVE, REJETE
+  
+  // Questions préliminaires
+  typeInscription        String   // "moi-meme" ou "autre-personne"
+  localisation           String   // "niamey" ou "region"
+  region                 String?  // Si en région
+  
+  // Informations personnelles
+  nom                    String
+  prenom                 String
+  nationalite            String
+  age                    Int
+  sexe                   String
+  telephone              String
+  email                  String?
+  adresse                String
+  
+  // Informations entreprise
+  nomEntreprise          String?
+  secteurActivite        String
+  registreCommerce       String?
+  
+  // Description de l'activité
+  produitsProposes       String   @db.Text
+  listeProduitsDetaillee String   @db.Text
+  capaciteProduction     String   @db.Text
+  experienceAnterieure   String   @db.Text
+  
+  // Informations demande
+  sitePreference         String
+  tailleKiosque          String
+  nombreEmployes         Int
+  
+  // Engagement
+  acceptEngagement       Boolean
+  acceptFraisStand       Boolean
+  
+  // Documents (URLs des fichiers uploadés)
+  carteIdentiteUrl       String?
+  registreCommerceDocUrl String?
+  listeProduitsFileUrl   String?
+  
+  // Notes administratives
+  notesAdmin             String?  @db.Text
+  dateDecision           DateTime?
+  raisonRejet            String?  @db.Text
+  
+  // Relations
+  evaluations            Evaluation[]
+  
+  @@index([numeroReference])
+  @@index([status])
+  @@index([createdAt])
+  @@index([telephone])
+  @@index([email])
+}
+
+model Admin {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  password    String
+  nom         String
+  prenom      String
+  role        String       @default("ADMIN") // ADMIN, SUPER_ADMIN
+  actif       Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  evaluations Evaluation[]
+  
+  @@index([email])
+}
+
+model Evaluation {
+  id                String   @id @default(cuid())
+  demandeId         String
+  demande           DemandeExposant @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  evaluateurId      String
+  evaluateur        Admin    @relation(fields: [evaluateurId], references: [id])
+  
+  // Scores par critère (stockés en JSON)
+  scores            String   @db.Text // JSON des scores
+  commentaires      String?  @db.Text // JSON des commentaires
+  scoreTotal        Float    // Score total calculé
+  
+  decision          String?  // APPROUVE, REJETE
+  dateEvaluation    DateTime @default(now())
+  
+  @@index([demandeId])
+  @@index([evaluateurId])
+  @@index([dateEvaluation])
+}

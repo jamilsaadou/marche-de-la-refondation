@@ -14,13 +14,15 @@ import {
   FaHeart,
   FaSeedling,
   FaTrophy,
-  FaUserTie
+  FaUserTie,
+  FaFileAlt
 } from "react-icons/fa";
 import { MdSecurity, MdOutlineLocalShipping } from "react-icons/md";
 import { GiTakeMyMoney } from "react-icons/gi";
 import { BiSolidFactory } from "react-icons/bi";
 import dynamic from 'next/dynamic';
 import Header from './components/Header';
+import ImageSlider from './components/ImageSlider';
 
 const LocationMap = dynamic(() => import('./components/LocationMap'), {
   ssr: false,
@@ -38,7 +40,7 @@ export default function Home() {
   const stats = [
     {
       icon: <FaStore className="text-4xl" />,
-      value: "1 054",
+      value: "1 500",
       label: "Kiosques disponibles",
       color: "from-primary-500 to-primary-600"
     },
@@ -135,7 +137,7 @@ export default function Home() {
       <Header />
 
       {/* Hero Section - Text Left, Photos Right */}
-      <section className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <section className="pt-40 sm:pt-44 md:pt-48 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Text Content - Left side (50%) */}
@@ -152,65 +154,20 @@ export default function Home() {
                 Valorisation et Commercialisation des Produits Locaux dans le cadre du Centenaire de Niamey
               </p>
               <div className="flex flex-wrap gap-4 mt-8">
-                <a href="/marche" className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center space-x-2">
-                  <FaShoppingBag className="group-hover:scale-110 transition-transform" />
-                  <span>Accéder aux Marchés</span>
-                </a>
-                <a href="/inscription-exposant" className="group px-8 py-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center space-x-2">
+                <a href="/inscription-exposant" className="group px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center space-x-2">
                   <FaUserTie className="group-hover:scale-110 transition-transform" />
                   <span>Devenir Exposant</span>
+                </a>
+                <a href="/reglement" className="group px-8 py-4 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center space-x-2">
+                  <FaFileAlt className="group-hover:scale-110 transition-transform" />
+                  <span>Consulter le Règlement</span>
                 </a>
               </div>
             </div>
 
-            {/* Photo Grid - Right side (50%) */}
+            {/* Image Slider with Glassmorphism - Right side (50%) */}
             <div className="w-full">
-              <div className="grid grid-cols-2 grid-rows-2 gap-2 h-[220px] md:h-[260px] lg:h-[280px]">
-                {/* Top left */}
-                <div className="col-span-1 row-span-1 relative overflow-hidden rounded-xl shadow-lg group">
-                  <img 
-                    src="/exposition-sur-le-marche-des-fruits-frais.jpg" 
-                    alt="Exposition marché fruits frais"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                
-                {/* Top right - tall image spanning full height */}
-                <div className="col-span-1 row-span-2 relative overflow-hidden rounded-xl shadow-xl group">
-                  <img 
-                    src="/select-1_13.jpg" 
-                    alt="Marché de la Réfondation"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                
-                {/* Bottom left - first small image */}
-                <div className="col-span-1 row-span-1 relative overflow-hidden rounded-xl shadow-lg group">
-                  <img 
-                    src="/portrait-photorealiste-d-une-personne-gerant-et-proprietaire-de-son-entreprise.jpg" 
-                    alt="Portrait entrepreneur"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-              </div>
-              
-              {/* Bottom row with 2 more images */}
-              <div className="grid grid-cols-2 gap-2 mt-2 h-[100px] md:h-[120px] lg:h-[130px]">
-                <div className="relative overflow-hidden rounded-xl shadow-lg group">
-                  <img 
-                    src="/select-1_25.jpg" 
-                    alt="Produits locaux"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                <div className="relative overflow-hidden rounded-xl shadow-lg group">
-                  <img 
-                    src="/select-1_2.jpg" 
-                    alt="Commerce local"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-              </div>
+              <ImageSlider />
             </div>
           </div>
 
@@ -335,7 +292,6 @@ export default function Home() {
               Caractéristiques du Marché
             </h3>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              Un espace moderne inspiré de l'architecture traditionnelle touarègue
             </p>
           </div>
 
@@ -376,38 +332,168 @@ export default function Home() {
             <LocationMap />
           </div>
 
-          {/* Site Information Cards */}
+          {/* Site Information Cards with Enhanced Glassmorphism */}
           <div className="grid md:grid-cols-2 gap-8 mt-12">
-            <div className="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-blue-500">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <FaStore className="text-white text-xl" />
+            {/* Site 1 Card */}
+            <div className="group relative">
+              {/* Background gradient effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-40 transition-opacity duration-300"></div>
+              
+              {/* Main card with glassmorphism */}
+              <div className="relative backdrop-blur-xl bg-white/40 rounded-3xl p-8 border border-white/50 shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                {/* Badge */}
+                <div className="absolute -top-3 right-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                  Site N°1
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">Site N°1 - Ex-OPVN (Petit marché)</h4>
-                  <div className="space-y-2 text-gray-700">
-                    <p><strong className="text-blue-600">Superficie:</strong> 2 600 m²</p>
-                    <p><strong className="text-blue-600">Capacité:</strong> 412 kiosques</p>
-                    <p><strong className="text-blue-600">Localisation:</strong> Rond-point Maourey</p>
-                    <p className="text-sm text-gray-600 mt-3">📍 13°30'51"N 2°06'32"E</p>
+                
+                {/* Header */}
+                <div className="flex items-start space-x-4 mb-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-blue-400 blur-lg opacity-50"></div>
+                    <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl transform rotate-3 group-hover:rotate-6 transition-transform duration-300">
+                      <FaStore className="text-white text-2xl" />
+                    </div>
                   </div>
+                  <div className="flex-1">
+                    <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-1">
+                      Ex-OPVN
+                    </h4>
+                    <p className="text-sm text-gray-600 font-medium">Petit marché moderne</p>
+                  </div>
+                </div>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="backdrop-blur-md bg-white/30 rounded-xl p-3 border border-white/40">
+                    <div className="flex items-center space-x-2 text-blue-700 mb-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                      </svg>
+                      <span className="text-xs font-semibold">Superficie</span>
+                    </div>
+                    <p className="text-lg font-bold text-gray-800">2 600 m²</p>
+                  </div>
+                  <div className="backdrop-blur-md bg-white/30 rounded-xl p-3 border border-white/40">
+                    <div className="flex items-center space-x-2 text-blue-700 mb-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                      </svg>
+                      <span className="text-xs font-semibold">Kiosques</span>
+                    </div>
+                    <p className="text-lg font-bold text-gray-800">412</p>
+                  </div>
+                </div>
+                
+                {/* Location */}
+                <div className="backdrop-blur-md bg-gradient-to-r from-blue-50/50 to-blue-100/50 rounded-xl p-4 mb-4 border border-white/40">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <FaMapMarkerAlt className="text-blue-600" />
+                        <span className="text-sm font-semibold text-gray-700">Localisation</span>
+                      </div>
+                      <p className="text-gray-800 font-medium">Rond-point Maourey</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600">Coordonnées GPS</p>
+                      <p className="text-sm font-mono text-gray-700">13°30'51"N 2°06'32"E</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Features */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Parking
+                  </span>
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Sécurité 24/7
+                  </span>
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Électricité
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-green-500">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <FaStore className="text-white text-xl" />
+            {/* Site 2 Card */}
+            <div className="group relative">
+              {/* Background gradient effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-40 transition-opacity duration-300"></div>
+              
+              {/* Main card with glassmorphism */}
+              <div className="relative backdrop-blur-xl bg-white/40 rounded-3xl p-8 border border-white/50 shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                {/* Badge */}
+                <div className="absolute -top-3 right-6 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                  Site N°2
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">Site N°2 - Ex-Marché Djémadjé</h4>
-                  <div className="space-y-2 text-gray-700">
-                    <p><strong className="text-green-600">Superficie:</strong> 5 500 m²</p>
-                    <p><strong className="text-green-600">Capacité:</strong> 642 kiosques</p>
-                    <p><strong className="text-green-600">Localisation:</strong> Près du Ministère du Commerce</p>
-                    <p className="text-sm text-gray-600 mt-3">📍 13°30'57"N 2°06'28"E</p>
+                
+                {/* Header */}
+                <div className="flex items-start space-x-4 mb-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-green-400 blur-lg opacity-50"></div>
+                    <div className="relative w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl transform -rotate-3 group-hover:-rotate-6 transition-transform duration-300">
+                      <FaStore className="text-white text-2xl" />
+                    </div>
                   </div>
+                  <div className="flex-1">
+                    <h4 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent mb-1">
+                      Ex-Marché Djémadjé
+                    </h4>
+                    <p className="text-sm text-gray-600 font-medium">Grand marché principal</p>
+                  </div>
+                </div>
+                
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="backdrop-blur-md bg-white/30 rounded-xl p-3 border border-white/40">
+                    <div className="flex items-center space-x-2 text-green-700 mb-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                      </svg>
+                      <span className="text-xs font-semibold">Superficie</span>
+                    </div>
+                    <p className="text-lg font-bold text-gray-800">5 500 m²</p>
+                  </div>
+                  <div className="backdrop-blur-md bg-white/30 rounded-xl p-3 border border-white/40">
+                    <div className="flex items-center space-x-2 text-green-700 mb-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                      </svg>
+                      <span className="text-xs font-semibold">Kiosques</span>
+                    </div>
+                    <p className="text-lg font-bold text-gray-800">642</p>
+                  </div>
+                </div>
+                
+                {/* Location */}
+                <div className="backdrop-blur-md bg-gradient-to-r from-green-50/50 to-green-100/50 rounded-xl p-4 mb-4 border border-white/40">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <FaMapMarkerAlt className="text-green-600" />
+                        <span className="text-sm font-semibold text-gray-700">Localisation</span>
+                      </div>
+                      <p className="text-gray-800 font-medium">Ministère du Commerce</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600">Coordonnées GPS</p>
+                      <p className="text-sm font-mono text-gray-700">13°30'57"N 2°06'28"E</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Features */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Parking VIP
+                  </span>
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Zone stockage
+                  </span>
+                  <span className="backdrop-blur-md bg-white/40 text-xs font-medium text-gray-700 px-3 py-1.5 rounded-full border border-white/50">
+                    ✅ Restaurant
+                  </span>
                 </div>
               </div>
             </div>
@@ -425,7 +511,7 @@ export default function Home() {
                 <span>Marché de la Réfondation</span>
               </h4>
               <p className="text-white/80">
-                Initiative du Ministère du Commerce et de l'Industrie de la République du Niger
+                Initiative du Ministère du Commerce et de l'Industrie du Niger
               </p>
             </div>
             <div>
@@ -436,12 +522,12 @@ export default function Home() {
             <div>
               <h4 className="text-xl font-bold mb-4">Partenaires</h4>
               <p className="text-white/80 mb-1">Ville de Niamey</p>
-              <p className="text-white/80 mb-1">Cabinet Le Concret</p>
+              <p className="text-white/80 mb-1">Agence Nationale pour la Société de l'Information</p>
               <p className="text-white/80">CCIN - Chambre de Commerce</p>
             </div>
           </div>
           <div className="border-t border-white/20 pt-8 text-center text-white/60">
-            <p>© 2025-2026 Marché de la Réfondation. République du Niger - Fraternité, Travail, Progrès</p>
+            <p>© 2025-2026 Marché de la Réfondation. Niger - Fraternité, Travail, Progrès</p>
           </div>
         </div>
       </footer>

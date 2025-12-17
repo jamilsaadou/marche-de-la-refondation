@@ -1,0 +1,62 @@
+-- CreateTable
+CREATE TABLE `DemandeExposant` (
+    `id` VARCHAR(191) NOT NULL,
+    `numeroReference` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'EN_ATTENTE',
+    `typeInscription` VARCHAR(191) NOT NULL,
+    `localisation` VARCHAR(191) NOT NULL,
+    `region` VARCHAR(191) NULL,
+    `nom` VARCHAR(191) NOT NULL,
+    `prenom` VARCHAR(191) NOT NULL,
+    `nationalite` VARCHAR(191) NOT NULL,
+    `age` INTEGER NOT NULL,
+    `sexe` VARCHAR(191) NOT NULL,
+    `telephone` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NULL,
+    `adresse` VARCHAR(191) NOT NULL,
+    `nomEntreprise` VARCHAR(191) NULL,
+    `secteurActivite` VARCHAR(191) NOT NULL,
+    `registreCommerce` VARCHAR(191) NULL,
+    `produitsProposes` TEXT NOT NULL,
+    `listeProduitsDetaillee` TEXT NOT NULL,
+    `capaciteProduction` TEXT NOT NULL,
+    `experienceAnterieure` TEXT NOT NULL,
+    `sitePreference` VARCHAR(191) NOT NULL,
+    `tailleKiosque` VARCHAR(191) NOT NULL,
+    `nombreEmployes` INTEGER NOT NULL,
+    `acceptEngagement` BOOLEAN NOT NULL,
+    `acceptFraisStand` BOOLEAN NOT NULL,
+    `carteIdentiteUrl` VARCHAR(191) NULL,
+    `registreCommerceDocUrl` VARCHAR(191) NULL,
+    `listeProduitsFileUrl` VARCHAR(191) NULL,
+    `notesAdmin` TEXT NULL,
+    `dateDecision` DATETIME(3) NULL,
+    `raisonRejet` TEXT NULL,
+
+    UNIQUE INDEX `DemandeExposant_numeroReference_key`(`numeroReference`),
+    INDEX `DemandeExposant_numeroReference_idx`(`numeroReference`),
+    INDEX `DemandeExposant_status_idx`(`status`),
+    INDEX `DemandeExposant_createdAt_idx`(`createdAt`),
+    INDEX `DemandeExposant_telephone_idx`(`telephone`),
+    INDEX `DemandeExposant_email_idx`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Admin` (
+    `id` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `password` VARCHAR(191) NOT NULL,
+    `nom` VARCHAR(191) NOT NULL,
+    `prenom` VARCHAR(191) NOT NULL,
+    `role` VARCHAR(191) NOT NULL DEFAULT 'ADMIN',
+    `actif` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `Admin_email_key`(`email`),
+    INDEX `Admin_email_idx`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

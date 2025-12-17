@@ -51,72 +51,13 @@ interface DemandStatus {
   nextSteps?: string[];
 }
 
-// Simulation de base de données de demandes
-const mockDemands: { [key: string]: DemandStatus } = {
-  'EXP-12345678': {
-    referenceNumber: 'EXP-12345678',
-    status: 'approved',
-    submittedDate: '2025-01-05',
-    applicantName: 'Amadou Moussa',
-    businessName: 'Coopérative Sahel',
-    email: 'amadou@example.com',
-    phone: '+227 90 12 34 56',
-    category: 'Agroalimentaire',
-    reviewDate: '2025-01-07',
-    assignedSite: {
-      name: 'Site N°1 - Ex-OPVN',
-      kiosk: 'A-125',
-      size: 'Moyen (20 m²)',
-      coordinates: [13.514167, 2.108889]
-    },
-    nextSteps: [
-      'Contacter notre service au +227 XX XX XX XX pour finaliser votre dossier',
-      'Préparer les documents requis (contrat, caution)',
-      'Planifier la signature du contrat dans les 7 jours',
-      'Payer la caution de garantie'
-    ]
-  },
-  'EXP-87654321': {
-    referenceNumber: 'EXP-87654321',
-    status: 'pending',
-    submittedDate: '2025-01-09',
-    applicantName: 'Fatima Ibrahim',
-    businessName: 'Beauté Naturelle',
-    email: 'fatima@example.com',
-    phone: '+227 91 23 45 67',
-    category: 'Cosmétiques',
-    nextSteps: [
-      'Votre dossier est en cours d\'examen',
-      'Vous recevrez une réponse sous 24-48 heures',
-      'Vérifiez régulièrement votre email'
-    ]
-  },
-  'EXP-11223344': {
-    referenceNumber: 'EXP-11223344',
-    status: 'rejected',
-    submittedDate: '2025-01-03',
-    applicantName: 'Hassane Ali',
-    businessName: 'Artisanat Moderne',
-    email: 'hassane@example.com',
-    phone: '+227 92 34 56 78',
-    category: 'Textile & Artisanat',
-    reviewDate: '2025-01-06',
-    rejectionReason: 'Documents incomplets - Carte d\'identité non lisible et absence de registre de commerce pour une entreprise constituée.',
-    nextSteps: [
-      'Corriger les documents manquants',
-      'Soumettre une nouvelle demande avec les documents complets',
-      'Contacter notre service pour plus d\'informations'
-    ]
-  }
-};
-
 export default function SuiviDemandePage() {
   const [referenceNumber, setReferenceNumber] = useState('');
   const [searchResult, setSearchResult] = useState<DemandStatus | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSearchResult(null);
@@ -128,18 +69,21 @@ export default function SuiviDemandePage() {
 
     setIsSearching(true);
 
-    // Simuler une recherche
-    setTimeout(() => {
-      const result = mockDemands[referenceNumber.trim()];
+    try {
+      const response = await fetch(`/api/suivi-demande?numeroReference=${encodeURIComponent(referenceNumber.trim())}`);
+      const data = await response.json();
       
-      if (result) {
-        setSearchResult(result);
+      if (response.ok) {
+        setSearchResult(data);
       } else {
-        setError('Numéro de référence introuvable. Veuillez vérifier et réessayer.');
+        setError(data.error || 'Numéro de référence introuvable. Veuillez vérifier et réessayer.');
       }
-      
+    } catch (error) {
+      console.error('Erreur lors de la recherche:', error);
+      setError('Une erreur est survenue lors de la recherche. Veuillez réessayer.');
+    } finally {
       setIsSearching(false);
-    }, 1000);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -200,7 +144,7 @@ export default function SuiviDemandePage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
+      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center space-x-2 bg-primary-100 px-4 py-2 rounded-full text-primary-700 font-medium mb-4">
             <FaSearch />
@@ -259,18 +203,6 @@ export default function SuiviDemandePage() {
                 </>
               )}
             </button>
-
-            {/* Demo Info */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-900 font-semibold mb-2">
-                💡 Numéros de test disponibles:
-              </p>
-              <div className="space-y-1 text-sm text-blue-800">
-                <p>• <code className="bg-blue-100 px-2 py-1 rounded">EXP-12345678</code> - Demande approuvée</p>
-                <p>• <code className="bg-blue-100 px-2 py-1 rounded">EXP-87654321</code> - En attente</p>
-                <p>• <code className="bg-blue-100 px-2 py-1 rounded">EXP-11223344</code> - Rejetée</p>
-              </div>
-            </div>
           </form>
         </div>
       </section>
