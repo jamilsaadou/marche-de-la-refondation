@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "create-superadmin": "ts-node scripts/create-superadmin.ts",
-    "seed:users": "ts-node prisma/seed-users.ts"
+    "seed:users": "ts-node prisma/seed-users.ts",
+    "seed:superadmin": "tsx prisma/seed-superadmin.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
