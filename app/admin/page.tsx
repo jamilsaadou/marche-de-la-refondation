@@ -1185,7 +1185,7 @@ function SitesContent() {
           <div className="space-y-2 text-gray-700">
             <p><strong>Superficie:</strong> 2,600 m²</p>
             <p><strong>Kiosques:</strong> 412</p>
-            <p><strong>Localisation:</strong> Rond-point Maourey</p>
+            <p><strong>Localisation:</strong> Petiti marché</p>
             <p><strong>Statut:</strong> <span className="text-green-600">Actif</span></p>
           </div>
         </div>

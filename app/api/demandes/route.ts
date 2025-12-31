@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { isAuthenticated } from '@/app/lib/auth';
+import { 
+  checkRateLimit, 
+  getClientIP, 
+  logSecurityEvent,
+  sanitizeInput,
+  isValidEmail,
+  isValidPhone,
+  detectSuspiciousPatterns
+} from '@/app/lib/security';
 
 // Fonction pour générer un numéro de référence unique
 function generateReferenceNumber(): string {
@@ -9,10 +18,101 @@ function generateReferenceNumber(): string {
   return `EXP-${timestamp}-${random}`;
 }
 
+/**
+ * Valider les données de la demande
+ */
+function validateDemandeData(body: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validation des champs requis
+  if (!body.typeInscription) errors.push('Type d\'inscription requis');
+  if (!body.localisation) errors.push('Localisation requise');
+  if (!body.nom) errors.push('Nom requis');
+  if (!body.prenom) errors.push('Prénom requis');
+  if (!body.nationalite) errors.push('Nationalité requise');
+  if (!body.age) errors.push('Âge requis');
+  if (!body.sexe) errors.push('Sexe requis');
+  if (!body.telephone) errors.push('Téléphone requis');
+  if (!body.adresse) errors.push('Adresse requise');
+  if (!body.secteurActivite) errors.push('Secteur d\'activité requis');
+  if (!body.produitsProposes && !body.produitsProposés) errors.push('Produits proposés requis');
+  if (!body.listeProduitsDetaillee && !body.listeProduitsDetaillée) errors.push('Liste détaillée des produits requise');
+
+  // Validation de l'âge
+  const age = parseInt(body.age);
+  if (isNaN(age) || age < 18 || age > 120) {
+    errors.push('Âge invalide (18-120 ans)');
+  }
+
+  // Validation de l'email si fourni
+  if (body.email && !isValidEmail(body.email)) {
+    errors.push('Format d\'email invalide');
+  }
+
+  // Validation du téléphone
+  if (body.telephone && !isValidPhone(body.telephone)) {
+    errors.push('Format de téléphone invalide');
+  }
+
+  // Validation du nombre d'employés
+  const nombreEmployes = parseInt(body.nombreEmployes);
+  if (isNaN(nombreEmployes) || nombreEmployes < 0 || nombreEmployes > 10000) {
+    errors.push('Nombre d\'employés invalide');
+  }
+
+  // Détecter les patterns suspects dans les champs texte
+  const textFields = [
+    body.nom, body.prenom, body.nationalite, body.adresse,
+    body.nomEntreprise, body.secteurActivite, body.produitsProposes,
+    body.produitsProposés, body.listeProduitsDetaillee, body.listeProduitsDetaillée
+  ];
+
+  for (const field of textFields) {
+    if (field && detectSuspiciousPatterns(field)) {
+      errors.push('Contenu suspect détecté dans les données');
+      break;
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 // POST - Créer une nouvelle demande
 export async function POST(request: NextRequest) {
+  const clientIP = getClientIP(request);
+  
   try {
+    // Vérifier le rate limit strict pour les soumissions
+    const rateLimitResult = checkRateLimit(request, '/api/demandes');
+    if (!rateLimitResult.allowed) {
+      logSecurityEvent({
+        type: 'rate_limit',
+        ip: clientIP,
+        endpoint: '/api/demandes',
+        details: 'Trop de soumissions de demandes',
+      });
+      return NextResponse.json(
+        { success: false, message: 'Trop de demandes. Veuillez patienter avant de soumettre à nouveau.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
+    
+    // Valider les données
+    const validation = validateDemandeData(body);
+    if (!validation.valid) {
+      logSecurityEvent({
+        type: 'suspicious_input',
+        ip: clientIP,
+        endpoint: '/api/demandes',
+        details: `Validation échouée: ${validation.errors.join(', ')}`,
+      });
+      return NextResponse.json(
+        { success: false, message: 'Données invalides', errors: validation.errors },
+        { status: 400 }
+      );
+    }
     
     // Générer un numéro de référence unique
     const numeroReference = generateReferenceNumber();

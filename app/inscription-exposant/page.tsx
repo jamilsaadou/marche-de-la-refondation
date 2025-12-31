@@ -45,6 +45,16 @@ interface FormData {
   capaciteProduction: string;
   experienceAnterieure: string;
   
+  // Nouveaux champs pour l'évaluation
+  origineMatieresPremieres: string;
+  transformationAuNiger: string;
+  innovation: string;
+  regulariteApprovisionnement: string;
+  adaptationDemandeCroissante: string;
+  nombreFemmes: string;
+  nombreJeunes: string;
+  certificatConformite: string;
+  
   // Informations demande
   sitePreference: string;
   tailleKiosque: string;
@@ -84,6 +94,14 @@ export default function InscriptionExposantPage() {
     listeProduitsDetaillée: '',
     capaciteProduction: '',
     experienceAnterieure: '',
+    origineMatieresPremieres: '',
+    transformationAuNiger: '',
+    innovation: '',
+    regulariteApprovisionnement: '',
+    adaptationDemandeCroissante: '',
+    nombreFemmes: '',
+    nombreJeunes: '',
+    certificatConformite: '',
     sitePreference: '',
     tailleKiosque: '',
     nombreEmployes: '',
@@ -110,31 +128,19 @@ export default function InscriptionExposantPage() {
   ];
 
   const secteurs = [
-    "Agroalimentaire",
-    "Cosmétiques",
-    "Textile & Artisanat",
-    "Produits laitiers",
-    "Fruits et légumes",
-    "Céréales et légumineuses",
-    "Artisanat traditionnel",
-    "Bijoux et accessoires",
-    "Maraîchage",
-    "Élevage",
-    "Transformation alimentaire",
-    "Autre"
+    "Artisanat d'art",
+    "Artisanat de services",
+    "Artisanat de transformation/production"
   ];
 
   const sites = [
-    "Site N°1 - Ex-OPVN (Rond-point Maourey)",
+    "Site N°1 - Ex-OPVN (Petit marché)",
     "Site N°2 - Ex-Marché Djémadjé (Ministère du Commerce)",
     "Pas de préférence"
   ];
 
-  const taillesKiosque = [
-    "Petit (10 m²)",
-    "Moyen (20 m²)",
-    "Grand (30 m²)"
-  ];
+  // Tous les stands sont uniformes de 4m²
+  const tailleStandUniforme = "4 m²";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -216,7 +222,7 @@ export default function InscriptionExposantPage() {
 
     if (step === 3) {
       if (!formData.sitePreference) newErrors.sitePreference = "Veuillez choisir un site";
-      if (!formData.tailleKiosque) newErrors.tailleKiosque = "Veuillez choisir une taille";
+      // Tous les stands sont uniformes de 4m² - pas de validation nécessaire
       if (!formData.nombreEmployes.trim()) newErrors.nombreEmployes = "Le nombre d'employés est requis";
       if (!formData.acceptEngagement) newErrors.acceptEngagement = "Vous devez accepter l'engagement";
       if (!formData.acceptFraisStand) newErrors.acceptFraisStand = "Vous devez accepter de prendre en charge les frais de stand";
@@ -298,6 +304,7 @@ export default function InscriptionExposantPage() {
       // Préparer les données à envoyer (sans les objets File)
       const dataToSend = {
         ...formData,
+        tailleKiosque: tailleStandUniforme, // Tous les stands sont uniformes de 4m²
         carteIdentiteUrl,
         registreCommerceDocUrl,
         listeProduitsFileUrl,
@@ -425,6 +432,135 @@ export default function InscriptionExposantPage() {
           </p>
         </div>
       </section>
+
+      {/* Fiches Sectorielles */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="glass-effect rounded-3xl p-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-primary-500 rounded-xl flex items-center justify-center mr-4">
+              <FaFileAlt className="text-white text-2xl" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Fiches Sectorielles</h3>
+              <p className="text-gray-600">Consultez les secteurs d'activité éligibles</p>
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Fiche 1 - Artisanat de Transformation/Production */}
+            <a
+              href="/Fiche_Artisanat_de_Transformation_Production.docx"
+              download
+              className="glass-effect rounded-2xl p-6 hover-lift transition-all group"
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FaIndustry className="text-white text-2xl" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-1">Artisanat de Transformation</h4>
+                  <p className="text-sm text-gray-600 mb-3">Production & transformation des matières premières</p>
+                  <div className="flex items-center justify-center space-x-2 text-primary-600 font-semibold">
+                    <FaUpload className="text-sm" />
+                    <span>Télécharger</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Fiche 2 - Artisanat de Service */}
+            <a
+              href="/Fiche_Artisanat_de_Service.docx"
+              download
+              className="glass-effect rounded-2xl p-6 hover-lift transition-all group"
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <MdBusiness className="text-white text-2xl" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-1">Artisanat de Service</h4>
+                  <p className="text-sm text-gray-600 mb-3">Prestations artisanales techniques & utilitaires</p>
+                  <div className="flex items-center justify-center space-x-2 text-primary-600 font-semibold">
+                    <FaUpload className="text-sm" />
+                    <span>Télécharger</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Fiche 3 - Artisanat d'Art */}
+            <a
+              href="/Fiche_Artisanat_d_Art.docx"
+              download
+              className="glass-effect rounded-2xl p-6 hover-lift transition-all group"
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FaStore className="text-white text-2xl" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-1">Artisanat d'Art</h4>
+                  <p className="text-sm text-gray-600 mb-3">Créativité & forte connotation culturelle</p>
+                  <div className="flex items-center justify-center space-x-2 text-primary-600 font-semibold">
+                    <FaUpload className="text-sm" />
+                    <span>Télécharger</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div className="mt-6 p-4 bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl border-2 border-accent-200">
+            <p className="text-sm text-gray-700 text-center">
+              <span className="font-semibold text-accent-700">💡 Conseil :</span> Consultez ces fiches pour identifier le secteur qui correspond à votre activité avant de remplir le formulaire.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Information sur le paiement */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 rounded-3xl p-8 border-2 border-amber-300 shadow-lg">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl">
+                <span className="text-4xl">💰</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 flex items-center">
+                <span className="mr-2">⚠️</span>
+                Information Importante
+              </h3>
+              <div className="bg-white/80 backdrop-blur rounded-2xl p-6 border-2 border-amber-300">
+                <p className="text-lg text-gray-800 mb-4 leading-relaxed">
+                  L'attribution du stand est soumise au <span className="font-bold text-amber-700">paiement de 100 000 Francs CFA</span>.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">✓</div>
+                    <p className="text-gray-700 text-sm">Ce montant sera payable uniquement après la validation de votre candidature</p>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">✓</div>
+                    <p className="text-gray-700 text-sm">Vous serez contacté pour le paiement après sélection</p>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">✓</div>
+                    <p className="text-gray-700 text-sm">Le paiement garantit votre place et l'attribution définitive du kiosque</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl p-4 border-l-4 border-amber-600">
+                <p className="text-sm font-medium text-amber-900">
+                  📋 En continuant votre inscription, vous confirmez avoir pris connaissance de cette condition.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Progress Bar */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
@@ -885,6 +1021,152 @@ export default function InscriptionExposantPage() {
                 />
                 {errors.experienceAnterieure && <p className="text-red-500 text-sm mt-1">{errors.experienceAnterieure}</p>}
               </div>
+
+              {/* Informations supplémentaires pour l'évaluation */}
+              <div className="border-t-2 border-primary-200 pt-6 mt-6">
+                <h4 className="text-lg font-bold text-gray-900 mb-4 text-primary-700">
+                  📋 Informations complémentaires pour l'évaluation
+                </h4>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Origine des matières premières
+                    </label>
+                    <select
+                      name="origineMatieresPremieres"
+                      value={formData.origineMatieresPremieres}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    >
+                      <option value="">Sélectionnez...</option>
+                      <option value="100% locale">100% locale (Niger)</option>
+                      <option value="Majoritairement locale">Majoritairement locale (&gt;50%)</option>
+                      <option value="Partiellement locale">Partiellement locale (&lt;50%)</option>
+                      <option value="Importée">Importée</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Transformation/Fabrication au Niger
+                    </label>
+                    <select
+                      name="transformationAuNiger"
+                      value={formData.transformationAuNiger}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    >
+                      <option value="">Sélectionnez...</option>
+                      <option value="Oui, 100%">Oui, entièrement au Niger</option>
+                      <option value="Partiellement">Partiellement au Niger</option>
+                      <option value="Non">Non</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Innovation dans vos produits
+                  </label>
+                  <input
+                    type="text"
+                    name="innovation"
+                    value={formData.innovation}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    placeholder="Décrivez l'innovation (nouveau procédé, emballage, formule...)"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Régularité de l'approvisionnement
+                    </label>
+                    <select
+                      name="regulariteApprovisionnement"
+                      value={formData.regulariteApprovisionnement}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    >
+                      <option value="">Sélectionnez...</option>
+                      <option value="Quotidien">Quotidien</option>
+                      <option value="Hebdomadaire">Hebdomadaire</option>
+                      <option value="Mensuel">Mensuel</option>
+                      <option value="Selon demande">Selon demande</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Capacité d'adaptation à la demande
+                    </label>
+                    <select
+                      name="adaptationDemandeCroissante"
+                      value={formData.adaptationDemandeCroissante}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    >
+                      <option value="">Sélectionnez...</option>
+                      <option value="Très flexible">Très flexible (+100%)</option>
+                      <option value="Flexible">Flexible (+50%)</option>
+                      <option value="Peu flexible">Peu flexible (+25%)</option>
+                      <option value="Fixe">Capacité fixe</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nombre de femmes dans votre équipe
+                    </label>
+                    <input
+                      type="number"
+                      name="nombreFemmes"
+                      value={formData.nombreFemmes}
+                      onChange={handleInputChange}
+                      min="0"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                      placeholder="Ex: 3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nombre de jeunes (18-35 ans) dans votre équipe
+                    </label>
+                    <input
+                      type="number"
+                      name="nombreJeunes"
+                      value={formData.nombreJeunes}
+                      onChange={handleInputChange}
+                      min="0"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                      placeholder="Ex: 2"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Certificat de conformité / Normes de qualité
+                  </label>
+                  <select
+                    name="certificatConformite"
+                    value={formData.certificatConformite}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                  >
+                    <option value="">Sélectionnez...</option>
+                    <option value="Oui, certifié">Oui, j'ai un certificat</option>
+                    <option value="En cours">En cours d'obtention</option>
+                    <option value="Engagement">Je m'engage à respecter les normes</option>
+                    <option value="Non">Non</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 
@@ -916,46 +1198,48 @@ export default function InscriptionExposantPage() {
                 {errors.sitePreference && <p className="text-red-500 text-sm mt-1">{errors.sitePreference}</p>}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <FaStore className="inline mr-2 text-primary-600" />
-                    Taille de kiosque souhaitée *
-                  </label>
-                  <select
-                    name="tailleKiosque"
-                    value={formData.tailleKiosque}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                      errors.tailleKiosque ? 'border-red-500' : 'border-gray-200'
-                    }`}
-                  >
-                    <option value="">Sélectionnez...</option>
-                    {taillesKiosque.map(taille => (
-                      <option key={taille} value={taille}>{taille}</option>
-                    ))}
-                  </select>
-                  {errors.tailleKiosque && <p className="text-red-500 text-sm mt-1">{errors.tailleKiosque}</p>}
+              {/* Information sur la taille uniforme des stands */}
+              <div className="bg-gradient-to-br from-primary-50 to-accent-50 rounded-2xl p-6 border-2 border-primary-200">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                      <FaStore className="text-white text-2xl" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">
+                      Taille des stands
+                    </h4>
+                    <p className="text-gray-700 mb-3">
+                      Tous les stands du Marché de la Réfondation sont uniformes pour garantir l'équité entre les exposants.
+                    </p>
+                    <div className="bg-white rounded-xl p-4 border-2 border-primary-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700 font-medium">Surface attribuée :</span>
+                        <span className="text-2xl font-bold text-primary-600">{tailleStandUniforme}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <FaUser className="inline mr-2 text-primary-600" />
-                    Nombre d'employés prévus *
-                  </label>
-                  <input
-                    type="number"
-                    name="nombreEmployes"
-                    value={formData.nombreEmployes}
-                    onChange={handleInputChange}
-                    min="1"
-                    className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                      errors.nombreEmployes ? 'border-red-500' : 'border-gray-200'
-                    }`}
-                    placeholder="Ex: 2"
-                  />
-                  {errors.nombreEmployes && <p className="text-red-500 text-sm mt-1">{errors.nombreEmployes}</p>}
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <FaUser className="inline mr-2 text-primary-600" />
+                  Nombre d'employés prévus *
+                </label>
+                <input
+                  type="number"
+                  name="nombreEmployes"
+                  value={formData.nombreEmployes}
+                  onChange={handleInputChange}
+                  min="1"
+                  className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
+                    errors.nombreEmployes ? 'border-red-500' : 'border-gray-200'
+                  }`}
+                  placeholder="Ex: 2"
+                />
+                {errors.nombreEmployes && <p className="text-red-500 text-sm mt-1">{errors.nombreEmployes}</p>}
               </div>
 
               <div className="border-t-2 border-gray-200 pt-6 mt-6">

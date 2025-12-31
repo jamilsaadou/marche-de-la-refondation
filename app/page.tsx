@@ -228,7 +228,7 @@ export default function Home() {
                   <div>
                     <h4 className="text-xl font-bold text-gray-900 mb-2">Localisation Stratégique</h4>
                     <p className="text-gray-700 mb-3">
-                      <strong>Site N°1 - Ex-OPVN:</strong> 2 600 m² | 412 kiosques (Rond-point Maourey)
+                      <strong>Site N°1 - Ex-OPVN:</strong> 2 600 m² | 412 kiosques (Petit marché)
                     </p>
                     <p className="text-gray-700">
                       <strong>Site N°2 - Ex-Marché Djémadjé:</strong> 5 500 m² | 642 kiosques (Près du Ministère du Commerce)
@@ -392,7 +392,7 @@ export default function Home() {
                         <FaMapMarkerAlt className="text-blue-600" />
                         <span className="text-sm font-semibold text-gray-700">Localisation</span>
                       </div>
-                      <p className="text-gray-800 font-medium">Rond-point Maourey</p>
+                      <p className="text-gray-800 font-medium">Petit marché</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-600">Coordonnées GPS</p>
