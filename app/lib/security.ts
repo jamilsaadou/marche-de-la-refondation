@@ -20,8 +20,9 @@ const RATE_LIMIT_CONFIG = {
 
 const SENSITIVE_ENDPOINTS_CONFIG = {
   '/api/auth/login': { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 tentatives en 15min
-  '/api/demandes': { windowMs: 60 * 1000, maxRequests: 3 }, // 3 soumissions par minute
+  '/api/demandes': { windowMs: 60 * 1000, maxRequests: 30 }, // 30 requêtes par minute (pour les admins)
   '/api/upload': { windowMs: 60 * 1000, maxRequests: 10 }, // 10 uploads par minute
+  '/api/evaluations': { windowMs: 60 * 1000, maxRequests: 30 }, // 30 requêtes par minute
 };
 
 /**

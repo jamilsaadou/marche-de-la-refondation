@@ -30,6 +30,8 @@ import {
 } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 import UtilisateursContent from './components/UtilisateursContent';
+import LogsContent from './components/LogsContent';
+import PrintDemande from '../components/PrintDemande';
 
 // Interface pour l'utilisateur connecté
 interface UserInfo {
@@ -557,6 +559,12 @@ export default function AdminPage() {
       color: "text-rose-600"
     },
     {
+      id: 'logs',
+      icon: <FaFileAlt className="text-xl" />,
+      title: "Logs",
+      color: "text-purple-600"
+    },
+    {
       id: 'parametres',
       icon: <FaCog className="text-xl" />,
       title: "Paramètres",
@@ -591,6 +599,8 @@ export default function AdminPage() {
         return <DocumentsContent />;
       case 'utilisateurs':
         return <UtilisateursContent />;
+      case 'logs':
+        return <LogsContent />;
       case 'parametres':
         return <ParametresContent />;
       default:
@@ -721,13 +731,27 @@ export default function AdminPage() {
   );
 }
 
-// Dashboard Content
+// Dashboard Content avec indicateurs enrichis
 function DashboardContent() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     demandesEnAttente: 0,
     demandesApprouvees: 0,
     demandesRejetees: 0,
     totalDemandes: 0,
+    parSecteur: {},
+    parRegion: {},
+    parGenre: { M: 0, F: 0 },
+    parLocalisation: { niamey: 0, region: 0 },
+    parSitePreference: {},
+    origineMatieresPremieres: {},
+    transformationNiger: {},
+    certificatConformite: {},
+    totalEmployes: 0,
+    totalFemmes: 0,
+    totalJeunes: 0,
+    ageMoyen: 0,
+    tauxApprobation: 0,
+    demandesRecentes: [],
     loading: true
   });
 
@@ -750,104 +774,441 @@ function DashboardContent() {
         const data = await response.json();
         if (data.success) {
           const demandes = data.data;
+          
+          // Statistiques de base
           const enAttente = demandes.filter((d: any) => d.status === 'EN_ATTENTE').length;
           const approuvees = demandes.filter((d: any) => d.status === 'APPROUVE').length;
           const rejetees = demandes.filter((d: any) => d.status === 'REJETE').length;
+          const total = demandes.length;
+          
+          // Statistiques par secteur
+          const parSecteur: any = {};
+          demandes.forEach((d: any) => {
+            const secteur = d.secteurActivite || 'Non spécifié';
+            parSecteur[secteur] = (parSecteur[secteur] || 0) + 1;
+          });
+          
+          // Statistiques par région
+          const parRegion: any = {};
+          demandes.forEach((d: any) => {
+            if (d.region) {
+              parRegion[d.region] = (parRegion[d.region] || 0) + 1;
+            }
+          });
+          
+          // Statistiques par genre
+          const parGenre = { M: 0, F: 0 };
+          demandes.forEach((d: any) => {
+            if (d.sexe === 'M') parGenre.M++;
+            else if (d.sexe === 'F') parGenre.F++;
+          });
+          
+          // Statistiques par localisation
+          const parLocalisation = { niamey: 0, region: 0 };
+          demandes.forEach((d: any) => {
+            if (d.localisation === 'niamey') parLocalisation.niamey++;
+            else if (d.localisation === 'region') parLocalisation.region++;
+          });
+          
+          // Statistiques préférence de site
+          const parSitePreference: any = {};
+          demandes.forEach((d: any) => {
+            const site = d.sitePreference || 'Non spécifié';
+            parSitePreference[site] = (parSitePreference[site] || 0) + 1;
+          });
+          
+          // Origine des matières premières
+          const origineMatieresPremieres: any = {};
+          demandes.forEach((d: any) => {
+            if (d.origineMatieresPremieres) {
+              origineMatieresPremieres[d.origineMatieresPremieres] = (origineMatieresPremieres[d.origineMatieresPremieres] || 0) + 1;
+            }
+          });
+          
+          // Transformation au Niger
+          const transformationNiger: any = {};
+          demandes.forEach((d: any) => {
+            if (d.transformationAuNiger) {
+              transformationNiger[d.transformationAuNiger] = (transformationNiger[d.transformationAuNiger] || 0) + 1;
+            }
+          });
+          
+          // Certificats de conformité
+          const certificatConformite: any = {};
+          demandes.forEach((d: any) => {
+            if (d.certificatConformite) {
+              certificatConformite[d.certificatConformite] = (certificatConformite[d.certificatConformite] || 0) + 1;
+            }
+          });
+          
+          // Calculs moyens
+          const totalEmployes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreEmployes) || 0), 0);
+          const totalFemmes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreFemmes) || 0), 0);
+          const totalJeunes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreJeunes) || 0), 0);
+          const sommeAges = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.age) || 0), 0);
+          const ageMoyen = total > 0 ? Math.round(sommeAges / total) : 0;
+          
+          // Taux d'approbation
+          const tauxApprobation = total > 0 ? ((approuvees / total) * 100).toFixed(1) : 0;
+          
+          // Demandes récentes (5 dernières)
+          const demandesRecentes = demandes
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5);
           
           setStats({
             demandesEnAttente: enAttente,
             demandesApprouvees: approuvees,
             demandesRejetees: rejetees,
-            totalDemandes: demandes.length,
+            totalDemandes: total,
+            parSecteur,
+            parRegion,
+            parGenre,
+            parLocalisation,
+            parSitePreference,
+            origineMatieresPremieres,
+            transformationNiger,
+            certificatConformite,
+            totalEmployes,
+            totalFemmes,
+            totalJeunes,
+            ageMoyen,
+            tauxApprobation,
+            demandesRecentes,
             loading: false
           });
         }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
-      setStats(prev => ({ ...prev, loading: false }));
+      setStats((prev: any) => ({ ...prev, loading: false }));
     }
   };
+
+  if (stats.loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des statistiques...</p>
+        </div>
+      </div>
+    );
+  }
 
   const statsCards = [
     { 
       label: "Demandes en attente", 
-      value: stats.loading ? "..." : stats.demandesEnAttente.toString(), 
-      color: "yellow", 
+      value: stats.demandesEnAttente.toString(), 
       icon: <FaClipboardList />,
       bgColor: "bg-yellow-100",
-      textColor: "text-yellow-600"
+      textColor: "text-yellow-600",
+      trend: "+5% cette semaine"
     },
     { 
       label: "Demandes approuvées", 
-      value: stats.loading ? "..." : stats.demandesApprouvees.toString(), 
-      color: "green", 
+      value: stats.demandesApprouvees.toString(), 
       icon: <FaCheck />,
       bgColor: "bg-green-100",
-      textColor: "text-green-600"
+      textColor: "text-green-600",
+      trend: `${stats.tauxApprobation}% du total`
     },
     { 
       label: "Demandes rejetées", 
-      value: stats.loading ? "..." : stats.demandesRejetees.toString(), 
-      color: "red", 
+      value: stats.demandesRejetees.toString(), 
       icon: <FaTimes />,
       bgColor: "bg-red-100",
-      textColor: "text-red-600"
+      textColor: "text-red-600",
+      trend: `${((stats.demandesRejetees / (stats.totalDemandes || 1)) * 100).toFixed(1)}% du total`
     },
     { 
       label: "Total des demandes", 
-      value: stats.loading ? "..." : stats.totalDemandes.toString(), 
-      color: "blue", 
+      value: stats.totalDemandes.toString(), 
       icon: <FaFileAlt />,
       bgColor: "bg-blue-100",
-      textColor: "text-blue-600"
+      textColor: "text-blue-600",
+      trend: "Toutes périodes"
+    },
+  ];
+
+  const socialImpactCards = [
+    {
+      label: "Emplois créés",
+      value: stats.totalEmployes.toString(),
+      icon: <FaUsers />,
+      bgColor: "bg-purple-100",
+      textColor: "text-purple-600",
+      description: "Total d'emplois générés"
+    },
+    {
+      label: "Femmes employées",
+      value: stats.totalFemmes.toString(),
+      icon: <FaUsers />,
+      bgColor: "bg-pink-100",
+      textColor: "text-pink-600",
+      description: "Inclusion féminine"
+    },
+    {
+      label: "Jeunes (18-35 ans)",
+      value: stats.totalJeunes.toString(),
+      icon: <FaUsers />,
+      bgColor: "bg-indigo-100",
+      textColor: "text-indigo-600",
+      description: "Employés jeunes"
+    },
+    {
+      label: "Âge moyen",
+      value: `${stats.ageMoyen} ans`,
+      icon: <FaUsers />,
+      bgColor: "bg-teal-100",
+      textColor: "text-teal-600",
+      description: "Des candidats"
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-transparent hover:border-primary-500">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.textColor}`}>
-                {stat.icon}
-              </div>
-              {!stats.loading && (
-                <div className={`px-2 py-1 rounded-full ${stat.bgColor} ${stat.textColor} text-xs font-semibold`}>
-                  {((parseInt(stat.value) / (stats.totalDemandes || 1)) * 100).toFixed(0)}%
-                </div>
-              )}
-            </div>
-            <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-            <p className="text-sm text-gray-600">{stat.label}</p>
-          </div>
-        ))}
+      {/* Titre et résumé */}
+      <div className="bg-gradient-to-r from-primary-600 to-accent-600 rounded-xl shadow-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">Tableau de Bord - Vue d'Ensemble</h2>
+        <p className="text-white/90">Statistiques complètes du Marché de la Réfondation</p>
       </div>
 
-      {/* Recent Activities */}
+      {/* Stats Grid - Demandes */}
+      <div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">📊 Statistiques des Demandes</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statsCards.map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-transparent hover:border-primary-500">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg ${stat.bgColor} ${stat.textColor}`}>
+                  {stat.icon}
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-600 mb-2">{stat.label}</p>
+              <p className="text-xs text-gray-500">{stat.trend}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Impact Social */}
+      <div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">👥 Impact Social et Emploi</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {socialImpactCards.map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className={`inline-flex p-3 rounded-lg ${stat.bgColor} ${stat.textColor} mb-4`}>
+                {stat.icon}
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+              <p className="text-sm font-medium text-gray-900">{stat.label}</p>
+              <p className="text-xs text-gray-500">{stat.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Répartitions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Par Secteur */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Activités Récentes</h3>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-start space-x-3 pb-3 border-b last:border-0">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Nouvelle demande d'inscription</p>
-                  <p className="text-xs text-gray-500">Il y a {i} heure{i > 1 ? 's' : ''}</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">📦 Répartition par Secteur</h3>
+          <div className="space-y-3">
+            {Object.entries(stats.parSecteur).map(([secteur, count]: [string, any]) => (
+              <div key={secteur}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-700">{secteur}</span>
+                  <span className="text-sm font-bold text-gray-900">{count} ({((count / stats.totalDemandes) * 100).toFixed(0)}%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 h-2 rounded-full"
+                    style={{ width: `${(count / stats.totalDemandes) * 100}%` }}
+                  />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Par Genre */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Graphique des Inscriptions</h3>
-          <div className="h-48 bg-gradient-to-br from-primary-50 to-accent-50 rounded-lg flex items-center justify-center">
-            <p className="text-gray-500">Graphique à venir</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">👤 Répartition par Genre</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Hommes</span>
+                <span className="text-sm font-bold text-blue-600">{stats.parGenre.M} ({((stats.parGenre.M / stats.totalDemandes) * 100).toFixed(0)}%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full"
+                  style={{ width: `${(stats.parGenre.M / stats.totalDemandes) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Femmes</span>
+                <span className="text-sm font-bold text-pink-600">{stats.parGenre.F} ({((stats.parGenre.F / stats.totalDemandes) * 100).toFixed(0)}%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-pink-500 h-2 rounded-full"
+                  style={{ width: `${(stats.parGenre.F / stats.totalDemandes) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Par Localisation */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">📍 Répartition Géographique</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Niamey</span>
+                <span className="text-sm font-bold text-green-600">{stats.parLocalisation.niamey} ({((stats.parLocalisation.niamey / stats.totalDemandes) * 100).toFixed(0)}%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full"
+                  style={{ width: `${(stats.parLocalisation.niamey / stats.totalDemandes) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Régions</span>
+                <span className="text-sm font-bold text-orange-600">{stats.parLocalisation.region} ({((stats.parLocalisation.region / stats.totalDemandes) * 100).toFixed(0)}%)</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-orange-500 h-2 rounded-full"
+                  style={{ width: `${(stats.parLocalisation.region / stats.totalDemandes) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {Object.keys(stats.parRegion).length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Détail des régions</h4>
+              <div className="space-y-2">
+                {Object.entries(stats.parRegion).map(([region, count]: [string, any]) => (
+                  <div key={region} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">{region}</span>
+                    <span className="font-medium text-gray-900">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Préférence de Site */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">🏪 Préférence de Site</h3>
+          <div className="space-y-3">
+            {Object.entries(stats.parSitePreference).map(([site, count]: [string, any]) => (
+              <div key={site}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-700 truncate">{site}</span>
+                  <span className="text-sm font-bold text-gray-900 ml-2">{count}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-teal-500 to-cyan-500 h-2 rounded-full"
+                    style={{ width: `${(count / stats.totalDemandes) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Qualité et Transformation */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Origine Matières Premières */}
+        {Object.keys(stats.origineMatieresPremieres).length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">🌾 Origine des Matières</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.origineMatieresPremieres).map(([origine, count]: [string, any]) => (
+                <div key={origine} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <span className="text-sm text-gray-600">{origine}</span>
+                  <span className="font-bold text-gray-900">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Transformation au Niger */}
+        {Object.keys(stats.transformationNiger).length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">🏭 Transformation Niger</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.transformationNiger).map(([transfo, count]: [string, any]) => (
+                <div key={transfo} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <span className="text-sm text-gray-600">{transfo}</span>
+                  <span className="font-bold text-gray-900">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Certificats de Conformité */}
+        {Object.keys(stats.certificatConformite).length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">✅ Certificats Qualité</h3>
+            <div className="space-y-2">
+              {Object.entries(stats.certificatConformite).map(([certif, count]: [string, any]) => (
+                <div key={certif} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <span className="text-sm text-gray-600">{certif}</span>
+                  <span className="font-bold text-gray-900">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Activités Récentes */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Demandes Récentes</h3>
+        <div className="space-y-3">
+          {stats.demandesRecentes.map((demande: any) => (
+            <div key={demande.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center space-x-3">
+                <div className={`w-2 h-2 rounded-full ${
+                  demande.status === 'EN_ATTENTE' ? 'bg-yellow-500' :
+                  demande.status === 'APPROUVE' ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{demande.prenom} {demande.nom}</p>
+                  <p className="text-xs text-gray-500">{demande.secteurActivite}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">
+                  {new Date(demande.createdAt).toLocaleDateString('fr-FR')}
+                </p>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  demande.status === 'EN_ATTENTE' ? 'bg-yellow-100 text-yellow-700' :
+                  demande.status === 'APPROUVE' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {demande.status}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -863,6 +1224,7 @@ function DemandesContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalDemandes, setTotalDemandes] = useState(0);
   const [evaluations, setEvaluations] = useState<{[key: string]: any}>({});
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchDemandes();
@@ -926,6 +1288,16 @@ function DemandesContent() {
           listeProduitsFileUrl: d.listeProduitsFileUrl,
           typeInscription: d.typeInscription,
           registreCommerce: d.registreCommerce,
+          // Informations complémentaires pour l'évaluation
+          origineMatieresPremieres: d.origineMatieresPremieres,
+          transformationAuNiger: d.transformationAuNiger,
+          innovation: d.innovation,
+          regulariteApprovisionnement: d.regulariteApprovisionnement,
+          adaptationDemandeCroissante: d.adaptationDemandeCroissante,
+          nombreFemmes: d.nombreFemmes,
+          nombreJeunes: d.nombreJeunes,
+          certificatConformite: d.certificatConformite,
+          photoProduitsUrls: d.photoProduitsUrls, // JSON string des URLs
         }));
         
         setDemandes(transformedDemandes);
@@ -985,6 +1357,116 @@ function DemandesContent() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) return;
+
+      // Récupérer toutes les demandes
+      const response = await fetch('/api/demandes?admin=true&limit=1000', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Import dynamique de xlsx
+          const XLSX = await import('xlsx');
+          
+          // Préparer les données pour Excel
+          const excelData = data.data.map((d: any) => ({
+            'N° Référence': d.numeroReference,
+            'Prénom': d.prenom,
+            'Nom': d.nom,
+            'Email': d.email || 'N/A',
+            'Téléphone': d.telephone,
+            'Âge': d.age,
+            'Sexe': d.sexe,
+            'Nationalité': d.nationalite,
+            'Adresse': d.adresse,
+            'Entreprise': d.nomEntreprise || 'N/A',
+            'Registre Commerce': d.registreCommerce || 'N/A',
+            'Secteur d\'activité': d.secteurActivite,
+            'Localisation': d.localisation,
+            'Région': d.region || 'N/A',
+            'Site de préférence': d.sitePreference,
+            'Taille kiosque': d.tailleKiosque,
+            'Nombre d\'employés': d.nombreEmployes,
+            'Nombre de femmes': d.nombreFemmes || 0,
+            'Nombre de jeunes': d.nombreJeunes || 0,
+            'Produits proposés': d.produitsProposes,
+            'Capacité de production': d.capaciteProduction,
+            'Origine matières premières': d.origineMatieresPremieres || 'N/A',
+            'Transformation au Niger': d.transformationAuNiger || 'N/A',
+            'Innovation': d.innovation || 'N/A',
+            'Régularité approvisionnement': d.regulariteApprovisionnement || 'N/A',
+            'Adaptation demande': d.adaptationDemandeCroissante || 'N/A',
+            'Certificat conformité': d.certificatConformite || 'N/A',
+            'Expérience antérieure': d.experienceAnterieure,
+            'Statut': d.status,
+            'Date de création': new Date(d.createdAt).toLocaleDateString('fr-FR'),
+          }));
+
+          // Créer le workbook et la worksheet
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(excelData);
+
+          // Ajuster la largeur des colonnes
+          const colWidths = [
+            { wch: 15 }, // N° Référence
+            { wch: 15 }, // Prénom
+            { wch: 15 }, // Nom
+            { wch: 25 }, // Email
+            { wch: 15 }, // Téléphone
+            { wch: 8 },  // Âge
+            { wch: 8 },  // Sexe
+            { wch: 15 }, // Nationalité
+            { wch: 30 }, // Adresse
+            { wch: 25 }, // Entreprise
+            { wch: 20 }, // Registre Commerce
+            { wch: 25 }, // Secteur
+            { wch: 15 }, // Localisation
+            { wch: 15 }, // Région
+            { wch: 20 }, // Site préférence
+            { wch: 15 }, // Taille kiosque
+            { wch: 15 }, // Nb employés
+            { wch: 15 }, // Nb femmes
+            { wch: 15 }, // Nb jeunes
+            { wch: 40 }, // Produits
+            { wch: 30 }, // Capacité production
+            { wch: 25 }, // Origine matières
+            { wch: 20 }, // Transformation
+            { wch: 30 }, // Innovation
+            { wch: 20 }, // Régularité
+            { wch: 20 }, // Adaptation
+            { wch: 20 }, // Certificat
+            { wch: 40 }, // Expérience
+            { wch: 15 }, // Statut
+            { wch: 15 }, // Date création
+          ];
+          ws['!cols'] = colWidths;
+
+          // Ajouter la feuille au workbook
+          XLSX.utils.book_append_sheet(wb, ws, 'Demandes');
+
+          // Générer le fichier Excel
+          const fileName = `Demandes_Exposants_${new Date().toISOString().split('T')[0]}.xlsx`;
+          XLSX.writeFile(wb, fileName);
+
+          alert(`${data.data.length} demande(s) exportée(s) avec succès !`);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'exportation:', error);
+      alert('Erreur lors de l\'exportation des données');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const selectedDemande = demandes.find(d => d.id === selectedDemandeId);
 
   if (selectedDemande) {
@@ -1022,9 +1504,22 @@ function DemandesContent() {
             <FaSearch />
             <span>Rafraîchir</span>
           </button>
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <FaDownload />
-            <span>Exporter</span>
+          <button 
+            onClick={handleExportExcel}
+            disabled={exporting}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Export en cours...</span>
+              </>
+            ) : (
+              <>
+                <FaDownload />
+                <span>Exporter Excel</span>
+              </>
+            )}
           </button>
         </div>
         <div className="text-sm text-gray-600">
@@ -1185,7 +1680,7 @@ function SitesContent() {
           <div className="space-y-2 text-gray-700">
             <p><strong>Superficie:</strong> 2,600 m²</p>
             <p><strong>Kiosques:</strong> 412</p>
-            <p><strong>Localisation:</strong> Petiti marché</p>
+            <p><strong>Localisation:</strong> Petit marché</p>
             <p><strong>Statut:</strong> <span className="text-green-600">Actif</span></p>
           </div>
         </div>
@@ -1240,11 +1735,39 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
   const [showEvaluation, setShowEvaluation] = useState(false);
   const [existingEvaluations, setExistingEvaluations] = useState<any[]>([]);
   const [loadingEvaluations, setLoadingEvaluations] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [evaluationStats, setEvaluationStats] = useState<any>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [hasUserEvaluated, setHasUserEvaluated] = useState(false);
 
-  // Charger les évaluations existantes
+  // Charger les évaluations et statistiques
   useEffect(() => {
     fetchEvaluations();
+    fetchEvaluationStats();
+    getCurrentUser();
   }, [demande.id]);
+
+  const getCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) return;
+
+      const response = await fetch('/api/auth/verify', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setCurrentUserRole(data.user.role);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    }
+  };
 
   const fetchEvaluations = async () => {
     try {
@@ -1261,12 +1784,49 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
         const data = await response.json();
         if (data.success) {
           setExistingEvaluations(data.data);
+          
+          // Vérifier si l'utilisateur actuel a déjà évalué
+          const userResponse = await fetch('/api/auth/verify', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            if (userData.success && userData.user) {
+              const userEval = data.data.find((e: any) => e.evaluateurId === userData.user.id);
+              setHasUserEvaluated(!!userEval);
+            }
+          }
         }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des évaluations:', error);
     } finally {
       setLoadingEvaluations(false);
+    }
+  };
+
+  const fetchEvaluationStats = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) return;
+
+      const response = await fetch(`/api/evaluations/stats?numeroReference=${demande.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setEvaluationStats(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
     }
   };
 
@@ -1443,14 +2003,18 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium"
-      >
-        <span>←</span>
-        <span>Retour à la liste</span>
-      </button>
+      {/* Back Button and Print Button */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium"
+        >
+          <span>←</span>
+          <span>Retour à la liste</span>
+        </button>
+        
+        <PrintDemande demande={demande} />
+      </div>
 
       {/* Candidate Information */}
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1555,21 +2119,72 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Produits et Production</h3>
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
+            <div className="col-span-2">
               <p className="text-sm text-gray-500">Produits proposés</p>
               <p className="font-medium text-gray-900">{demande.produits}</p>
             </div>
+            {demande.listeProduitsDetaillee && (
+              <div className="col-span-2">
+                <p className="text-sm text-gray-500">Liste détaillée des produits</p>
+                <p className="font-medium text-gray-900 bg-gray-50 p-3 rounded-lg whitespace-pre-line">{demande.listeProduitsDetaillee}</p>
+              </div>
+            )}
             <div>
-              <p className="text-sm text-gray-500">Capacité de production</p>
+              <p className="text-sm text-gray-500">Capacité de production mensuelle</p>
               <p className="font-medium text-gray-900">{demande.capaciteProduction || 'N/A'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Taille de kiosque souhaitée</p>
               <p className="font-medium text-gray-900">{demande.tailleKiosque || 'N/A'}</p>
             </div>
+            <div className="col-span-2">
+              <p className="text-sm text-gray-500">Expérience antérieure</p>
+              <p className="font-medium text-gray-900 bg-gray-50 p-3 rounded-lg">{demande.experience || 'N/A'}</p>
+            </div>
             <div>
               <p className="text-sm text-gray-500">Date de demande</p>
               <p className="font-medium text-gray-900">{demande.date}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Informations complémentaires pour l'évaluation */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Informations Complémentaires pour l'Évaluation</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Origine des matières premières</p>
+              <p className="font-medium text-gray-900">{demande.origineMatieresPremieres || 'Non spécifié'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Transformation/Fabrication au Niger</p>
+              <p className="font-medium text-gray-900">{demande.transformationAuNiger || 'Non spécifié'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Régularité de l'approvisionnement</p>
+              <p className="font-medium text-gray-900">{demande.regulariteApprovisionnement || 'Non spécifié'}</p>
+            </div>
+            {demande.innovation && (
+              <div className="col-span-3">
+                <p className="text-sm text-gray-500">Innovation dans les produits</p>
+                <p className="font-medium text-gray-900 bg-blue-50 p-3 rounded-lg">{demande.innovation}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-sm text-gray-500">Capacité d'adaptation à la demande</p>
+              <p className="font-medium text-gray-900">{demande.adaptationDemandeCroissante || 'Non spécifié'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Nombre de femmes dans l'équipe</p>
+              <p className="font-medium text-gray-900">{demande.nombreFemmes !== undefined && demande.nombreFemmes !== null ? demande.nombreFemmes : 'Non spécifié'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Nombre de jeunes (18-35 ans)</p>
+              <p className="font-medium text-gray-900">{demande.nombreJeunes !== undefined && demande.nombreJeunes !== null ? demande.nombreJeunes : 'Non spécifié'}</p>
+            </div>
+            <div className="col-span-3">
+              <p className="text-sm text-gray-500">Certificat de conformité / Normes de qualité</p>
+              <p className="font-medium text-gray-900">{demande.certificatConformite || 'Non spécifié'}</p>
             </div>
           </div>
         </div>
@@ -1677,7 +2292,169 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{demande.listeProduitsDetaillee}</p>
           </div>
         )}
+
+        {/* Photos des produits */}
+        {demande.photoProduitsUrls && (() => {
+          try {
+            const photos = JSON.parse(demande.photoProduitsUrls);
+            if (Array.isArray(photos) && photos.length > 0) {
+              return (
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">📸</span>
+                    Photos des produits ({photos.length})
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {photos.map((photoUrl: string, index: number) => (
+                      <div 
+                        key={index}
+                        className="relative group cursor-pointer"
+                        onClick={() => setSelectedPhoto(photoUrl)}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200 hover:border-primary-500 transition-all">
+                          <img
+                            src={photoUrl}
+                            alt={`Produit ${index + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all rounded-lg flex items-center justify-center">
+                          <FaEye className="text-white opacity-0 group-hover:opacity-100 text-2xl transition-opacity" />
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1 text-center">Photo {index + 1}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 italic">
+                    💡 Cliquez sur une photo pour l'agrandir
+                  </p>
+                </div>
+              );
+            }
+          } catch (e) {
+            console.error('Erreur lors du parsing des photos:', e);
+          }
+          return null;
+        })()}
       </div>
+
+      {/* Lightbox Modal pour afficher les photos en grand */}
+      {selectedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <button
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-3 transition-all"
+            title="Fermer"
+          >
+            <FaTimes className="text-2xl" />
+          </button>
+          <div className="max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={selectedPhoto}
+              alt="Photo agrandie"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Statut d'Évaluation du Jury */}
+      {evaluationStats && evaluationStats.juryMembers.total > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm p-6 border-2 border-blue-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <FaUsers className="mr-2 text-blue-600" />
+            Statut d'Évaluation des Jurys
+          </h3>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-1">Total de jurys</p>
+              <p className="text-3xl font-bold text-gray-900">{evaluationStats.juryMembers.total}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-1">Ont évalué</p>
+              <p className="text-3xl font-bold text-green-600">{evaluationStats.juryMembers.evaluated}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-1">Score moyen</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {evaluationStats.statistics.averageJuryScore.toFixed(1)}/100
+              </p>
+            </div>
+          </div>
+
+          {/* Barre de progression */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Progression des évaluations</span>
+              <span className="text-sm font-bold text-gray-900">
+                {evaluationStats.juryMembers.evaluated}/{evaluationStats.juryMembers.total}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div
+                className={`h-4 rounded-full transition-all ${
+                  evaluationStats.statistics.allJuriesEvaluated ? 'bg-green-500' : 'bg-blue-500'
+                }`}
+                style={{ 
+                  width: `${(evaluationStats.juryMembers.evaluated / evaluationStats.juryMembers.total) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Liste des jurys qui n'ont pas encore évalué */}
+          {evaluationStats.juryMembers.notEvaluated.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <h4 className="font-semibold text-yellow-800 mb-2 flex items-center">
+                <FaClipboardList className="mr-2" />
+                En attente d'évaluation ({evaluationStats.juryMembers.notEvaluated.length})
+              </h4>
+              <ul className="space-y-1">
+                {evaluationStats.juryMembers.notEvaluated.map((jury: any) => (
+                  <li key={jury.id} className="text-sm text-yellow-700">
+                    • {jury.prenom} {jury.nom} ({jury.email})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Statut de validation du président */}
+          {evaluationStats.statistics.allJuriesEvaluated && (
+            <div className={`rounded-lg p-4 ${
+              evaluationStats.statistics.hasPresidentValidated 
+                ? 'bg-green-100 border-2 border-green-500' 
+                : 'bg-blue-100 border-2 border-blue-500'
+            }`}>
+              {evaluationStats.statistics.hasPresidentValidated ? (
+                <div className="flex items-center text-green-800">
+                  <FaCheck className="text-2xl mr-3" />
+                  <div>
+                    <h4 className="font-bold">Validation finale effectuée</h4>
+                    <p className="text-sm">
+                      Décision: <strong>{evaluationStats.statistics.finalDecision === 'APPROUVE' ? 'Approuvé' : 'Rejeté'}</strong>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center text-blue-800">
+                  <FaUserShield className="text-2xl mr-3" />
+                  <div>
+                    <h4 className="font-bold">Prêt pour la validation finale</h4>
+                    <p className="text-sm">
+                      Tous les jurys ont évalué. Le président du jury peut maintenant procéder à la validation finale.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Évaluations existantes */}
       {existingEvaluations.length > 0 && (
@@ -1783,18 +2560,65 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
         </div>
       )}
 
-      {/* Bouton Évaluer */}
-      {!showEvaluation && demande.statusBrut === 'EN_ATTENTE' && (
+      {/* Bouton Évaluer - Adapté selon le rôle */}
+      {!showEvaluation && demande.statusBrut === 'EN_ATTENTE' && !hasUserEvaluated && (
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">Après avoir examiné le dossier du candidat, vous pouvez procéder à l'évaluation.</p>
-            <button
-              onClick={() => setShowEvaluation(true)}
-              className="px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-            >
-              <FaClipboardList className="inline-block mr-2" />
-              Commencer l'Évaluation
-            </button>
+            {currentUserRole === 'PRESIDENT_JURY' && evaluationStats && !evaluationStats.statistics.allJuriesEvaluated ? (
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
+                <FaUserShield className="text-4xl text-yellow-600 mx-auto mb-3" />
+                <h4 className="font-bold text-yellow-800 mb-2">Validation finale en attente</h4>
+                <p className="text-yellow-700">
+                  En tant que président du jury, vous devez attendre que tous les membres du jury 
+                  aient évalué cette demande avant de procéder à la validation finale.
+                </p>
+                <p className="text-sm text-yellow-600 mt-2">
+                  {evaluationStats.juryMembers.evaluated}/{evaluationStats.juryMembers.total} jurys ont évalué
+                </p>
+              </div>
+            ) : currentUserRole === 'PRESIDENT_JURY' && evaluationStats && evaluationStats.statistics.allJuriesEvaluated ? (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+                <FaUserShield className="text-4xl text-blue-600 mx-auto mb-3" />
+                <h4 className="font-bold text-blue-800 mb-2">Validation finale</h4>
+                <p className="text-blue-700 mb-4">
+                  Tous les jurys ont évalué cette demande. Vous pouvez maintenant procéder à la validation finale.
+                </p>
+                <p className="text-sm text-blue-600 mb-4">
+                  Score moyen des jurys: <strong>{evaluationStats.statistics.averageJuryScore.toFixed(1)}/100</strong>
+                </p>
+                <button
+                  onClick={() => setShowEvaluation(true)}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  <FaUserShield className="inline-block mr-2" />
+                  Procéder à la Validation Finale
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-4">Après avoir examiné le dossier du candidat, vous pouvez procéder à l'évaluation.</p>
+                <button
+                  onClick={() => setShowEvaluation(true)}
+                  className="px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  <FaClipboardList className="inline-block mr-2" />
+                  Commencer l'Évaluation
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Message si l'utilisateur a déjà évalué */}
+      {hasUserEvaluated && demande.statusBrut === 'EN_ATTENTE' && (
+        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6">
+          <div className="flex items-center justify-center text-green-800">
+            <FaCheck className="text-3xl mr-3" />
+            <div className="text-center">
+              <h4 className="font-bold text-lg">Vous avez déjà évalué cette demande</h4>
+              <p className="text-sm">Votre évaluation a été enregistrée avec succès.</p>
+            </div>
           </div>
         </div>
       )}

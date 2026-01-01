@@ -227,7 +227,7 @@ export default function ReglementPage() {
                   <FaGavel className="text-3xl mr-3" />
                   <h1 className="text-3xl md:text-4xl font-bold">Règlement de Sélection</h1>
                 </div>
-                <p className="text-lg opacity-90">Marché de la Refondation - Édition 2025</p>
+                <p className="text-lg opacity-90">Marché de la Refondation</p>
               </div>
               <button 
                 onClick={generatePDF}

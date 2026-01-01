@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
-  FaGlobe,
   FaShoppingBag,
   FaUserTie,
   FaSearch,
@@ -13,156 +12,48 @@ import {
   FaTimes,
   FaHome,
   FaFileAlt,
-  FaChevronRight,
-  FaUserShield,
-  FaSignInAlt,
-  FaSignOutAlt,
-  FaUser
+  FaChevronRight
 } from "react-icons/fa";
-
-// Interface pour l'utilisateur connecté
-interface UserInfo {
-  id: string;
-  email: string;
-  nom: string;
-  prenom: string;
-  role: string;
-}
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
   const pathname = usePathname();
-  const router = useRouter();
 
-  // Vérifier l'authentification au chargement
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('auth-token');
-      
-      if (!token) {
-        setLoadingAuth(false);
-        return;
-      }
-
-      const response = await fetch('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-        } else {
-          localStorage.removeItem('auth-token');
-        }
-      } else {
-        localStorage.removeItem('auth-token');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la vérification de l\'authentification:', error);
-    } finally {
-      setLoadingAuth(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('auth-token');
-      
-      if (token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-      }
-      
-      localStorage.removeItem('auth-token');
-      setUser(null);
-      router.push('/');
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-      localStorage.removeItem('auth-token');
-      setUser(null);
-      router.push('/');
-    }
-  };
-
-  // Menu items publics (accessibles uniquement aux visiteurs non connectés)
-  const publicMenuItems = [
+  // Menu items
+  const menuItems = [
     {
       label: "Accueil",
       href: "/",
       icon: <FaHome className="text-lg" />,
-      description: "Page principale",
-      forAll: true // Accessible à tous (visiteurs et admins)
+      description: "Page principale"
     },
     {
       label: "Informations",
       href: "/marche",
       icon: <FaShoppingBag className="text-lg" />,
-      description: "Détails du marché",
-      forAll: true // Accessible à tous
+      description: "Détails du marché"
     },
     {
       label: "Règlement",
       href: "/reglement",
       icon: <FaFileAlt className="text-lg" />,
-      description: "Conditions générales",
-      forAll: true // Accessible à tous
+      description: "Conditions générales"
     },
     {
       label: "Devenir Exposant",
       href: "/inscription-exposant",
       icon: <FaUserTie className="text-lg" />,
       highlight: true,
-      description: "Inscription en ligne",
-      forAll: false // Uniquement pour visiteurs
+      description: "Inscription en ligne"
     },
     {
       label: "Suivi de Demande",
       href: "/suivi-demande",
       icon: <FaSearch className="text-lg" />,
-      description: "Vérifier votre statut",
-      forAll: false // Uniquement pour visiteurs
+      description: "Vérifier votre statut"
     }
   ];
-
-  // Menu items administrateur (uniquement pour les admins)
-  const adminMenuItems = [
-    {
-      label: "Administration",
-      href: "/admin",
-      icon: <FaUserShield className="text-lg" />,
-      description: "Panneau d'administration",
-      highlight: false,
-      forAll: false
-    }
-  ];
-
-  // Combiner les menus en fonction du rôle de l'utilisateur
-  let menuItems;
-  
-  if (user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
-    // Pour les administrateurs : menus communs + menu administration
-    menuItems = [
-      ...publicMenuItems.filter(item => item.forAll),
-      ...adminMenuItems
-    ];
-  } else {
-    // Pour les visiteurs : tous les menus publics
-    menuItems = publicMenuItems;
-  }
 
   const isActive = (href: string) => {
     return pathname === href;
@@ -232,47 +123,6 @@ export default function Header() {
                 </div>
               </div>
             ))}
-
-            {/* Boutons d'authentification */}
-            {!loadingAuth && (
-              <div className="flex items-center space-x-2 ml-2">
-                {user ? (
-                  <>
-                    {/* Profil utilisateur */}
-                    <div className="flex items-center space-x-2 px-3 py-2 backdrop-blur-sm bg-white/30 border border-white/50 rounded-xl">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">
-                          {user.prenom[0]}{user.nom[0]}
-                        </span>
-                      </div>
-                      <div className="hidden xl:block">
-                        <p className="text-xs font-semibold text-gray-900">
-                          {user.prenom} {user.nom}
-                        </p>
-                        <p className="text-xs text-gray-600">{user.role}</p>
-                      </div>
-                    </div>
-                    {/* Bouton de déconnexion */}
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center space-x-2 px-4 py-2 backdrop-blur-md bg-red-500/80 text-white rounded-xl hover:bg-red-600/90 transition-all duration-300 shadow-md hover:shadow-lg border border-white/20"
-                      title="Déconnexion"
-                    >
-                      <FaSignOutAlt className="text-lg" />
-                      <span className="hidden xl:inline">Déconnexion</span>
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/admin/login"
-                    className="flex items-center space-x-2 px-4 py-2 backdrop-blur-md bg-primary-500/80 text-white rounded-xl hover:bg-primary-600/90 transition-all duration-300 shadow-md hover:shadow-lg border border-white/20"
-                  >
-                    <FaSignInAlt className="text-lg" />
-                    <span className="hidden xl:inline">Connexion Admin</span>
-                  </Link>
-                )}
-              </div>
-            )}
           </nav>
 
           {/* Mobile Menu Button with Glassmorphism */}
@@ -325,50 +175,6 @@ export default function Header() {
                   <FaChevronRight className="text-sm opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
                 </Link>
               ))}
-
-              {/* Boutons d'authentification mobile */}
-              {!loadingAuth && (
-                <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
-                  {user ? (
-                    <>
-                      {/* Profil utilisateur mobile */}
-                      <div className="flex items-center space-x-3 px-4 py-3 backdrop-blur-sm bg-white/30 border border-white/50 rounded-xl">
-                        <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">
-                            {user.prenom[0]}{user.nom[0]}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {user.prenom} {user.nom}
-                          </p>
-                          <p className="text-xs text-gray-600">{user.role}</p>
-                        </div>
-                      </div>
-                      {/* Bouton de déconnexion mobile */}
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsMenuOpen(false);
-                        }}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-3.5 backdrop-blur-md bg-red-500/80 text-white rounded-xl hover:bg-red-600/90 transition-all duration-300 shadow-md border border-white/20"
-                      >
-                        <FaSignOutAlt className="text-lg" />
-                        <span>Déconnexion</span>
-                      </button>
-                    </>
-                  ) : (
-                    <Link
-                      href="/admin/login"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="w-full flex items-center justify-center space-x-2 px-4 py-3.5 backdrop-blur-md bg-primary-500/80 text-white rounded-xl hover:bg-primary-600/90 transition-all duration-300 shadow-md border border-white/20"
-                    >
-                      <FaSignInAlt className="text-lg" />
-                      <span>Connexion Admin</span>
-                    </Link>
-                  )}
-                </div>
-              )}
             </div>
           </nav>
         </div>

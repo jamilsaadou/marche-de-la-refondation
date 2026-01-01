@@ -10,6 +10,7 @@ import {
   isValidPhone,
   detectSuspiciousPatterns
 } from '@/app/lib/security';
+import { sendApplicationConfirmationEmail } from '@/app/lib/email';
 
 // Fonction pour générer un numéro de référence unique
 function generateReferenceNumber(): string {
@@ -35,6 +36,7 @@ function validateDemandeData(body: any): { valid: boolean; errors: string[] } {
   if (!body.telephone) errors.push('Téléphone requis');
   if (!body.adresse) errors.push('Adresse requise');
   if (!body.secteurActivite) errors.push('Secteur d\'activité requis');
+  // Accepter les deux variantes (avec et sans accents)
   if (!body.produitsProposes && !body.produitsProposés) errors.push('Produits proposés requis');
   if (!body.listeProduitsDetaillee && !body.listeProduitsDetaillée) errors.push('Liste détaillée des produits requise');
 
@@ -139,6 +141,15 @@ export async function POST(request: NextRequest) {
         listeProduitsDetaillee: body.listeProduitsDetaillée || body.listeProduitsDetaillee,
         capaciteProduction: body.capaciteProduction,
         experienceAnterieure: body.experienceAnterieure,
+        // Informations complémentaires pour l'évaluation
+        origineMatieresPremieres: body.origineMatieresPremieres || null,
+        transformationAuNiger: body.transformationAuNiger || null,
+        innovation: body.innovation || null,
+        regulariteApprovisionnement: body.regulariteApprovisionnement || null,
+        adaptationDemandeCroissante: body.adaptationDemandeCroissante || null,
+        nombreFemmes: body.nombreFemmes ? parseInt(body.nombreFemmes) : null,
+        nombreJeunes: body.nombreJeunes ? parseInt(body.nombreJeunes) : null,
+        certificatConformite: body.certificatConformite || null,
         sitePreference: body.sitePreference,
         tailleKiosque: body.tailleKiosque,
         nombreEmployes: parseInt(body.nombreEmployes),
@@ -148,8 +159,25 @@ export async function POST(request: NextRequest) {
         carteIdentiteUrl: body.carteIdentiteUrl || null,
         registreCommerceDocUrl: body.registreCommerceDocUrl || null,
         listeProduitsFileUrl: body.listeProduitsFileUrl || null,
+        photoProduitsUrls: body.photoProduitsUrls || null, // JSON string des URLs des photos
       },
     });
+
+    // Envoyer un email de confirmation si l'email est fourni
+    if (demande.email) {
+      const candidateName = `${demande.prenom} ${demande.nom}`;
+      try {
+        await sendApplicationConfirmationEmail(
+          demande.email,
+          candidateName,
+          demande.numeroReference
+        );
+        console.log(`Email de confirmation envoyé à ${demande.email}`);
+      } catch (emailError) {
+        // Ne pas bloquer la création de la demande si l'email échoue
+        console.error('Erreur lors de l\'envoi de l\'email de confirmation:', emailError);
+      }
+    }
 
     return NextResponse.json({
       success: true,

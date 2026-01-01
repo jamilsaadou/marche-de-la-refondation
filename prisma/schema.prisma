@@ -43,6 +43,16 @@ model DemandeExposant {
   capaciteProduction     String   @db.Text
   experienceAnterieure   String   @db.Text
   
+  // Informations complémentaires pour l'évaluation
+  origineMatieresPremieres     String?
+  transformationAuNiger        String?
+  innovation                   String?  @db.Text
+  regulariteApprovisionnement  String?
+  adaptationDemandeCroissante  String?
+  nombreFemmes                 Int?
+  nombreJeunes                 Int?
+  certificatConformite         String?
+  
   // Informations demande
   sitePreference         String
   tailleKiosque          String
@@ -56,6 +66,7 @@ model DemandeExposant {
   carteIdentiteUrl       String?
   registreCommerceDocUrl String?
   listeProduitsFileUrl   String?
+  photoProduitsUrls      String?  @db.Text // JSON array des URLs des photos de produits
   
   // Notes administratives
   notesAdmin             String?  @db.Text
@@ -78,13 +89,14 @@ model Admin {
   password    String
   nom         String
   prenom      String
-  role        String       @default("ADMIN") // ADMIN, SUPER_ADMIN
+  role        String       @default("ADMIN") // ADMIN, SUPER_ADMIN, JURY, PRESIDENT_JURY
   actif       Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   evaluations Evaluation[]
   
   @@index([email])
+  @@index([role])
 }
 
 model Evaluation {
@@ -99,10 +111,41 @@ model Evaluation {
   commentaires      String?  @db.Text // JSON des commentaires
   scoreTotal        Float    // Score total calculé
   
-  decision          String?  // APPROUVE, REJETE
+  decision          String?  // APPROUVE, REJETE (seulement pour le président)
+  estValidationFinale Boolean @default(false) // true si c'est la validation finale du président
   dateEvaluation    DateTime @default(now())
   
+  @@unique([demandeId, evaluateurId]) // Un évaluateur ne peut évaluer qu'une seule fois une demande
   @@index([demandeId])
   @@index([evaluateurId])
   @@index([dateEvaluation])
+}
+
+model Log {
+  id            String   @id @default(cuid())
+  userId        String?  // ID de l'utilisateur (nullable pour les actions système)
+  userEmail     String?  // Email de l'utilisateur pour référence
+  userName      String?  // Nom complet de l'utilisateur
+  userRole      String?  // Rôle de l'utilisateur
+  
+  action        String   // Type d'action (LOGIN, LOGOUT, CREATE, UPDATE, DELETE, APPROVE, REJECT, etc.)
+  entity        String?  // Entité concernée (DEMANDE, USER, EVALUATION, etc.)
+  entityId      String?  // ID de l'entité concernée
+  
+  description   String   @db.Text // Description détaillée de l'action
+  metadata      String?  @db.Text // Métadonnées supplémentaires en JSON
+  
+  ipAddress     String?  // Adresse IP de l'utilisateur
+  userAgent     String?  @db.Text // User agent du navigateur
+  
+  status        String   @default("SUCCESS") // SUCCESS, ERROR, WARNING
+  errorMessage  String?  @db.Text // Message d'erreur si applicable
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@index([status])
 }

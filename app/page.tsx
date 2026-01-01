@@ -89,21 +89,21 @@ export default function Home() {
 
   const sectors = [
     {
-      icon: <FaShoppingBag className="text-4xl text-white" />,
-      title: "Agroalimentaire",
-      description: "Produits alimentaires transformés localement",
+      icon: <BiSolidFactory className="text-4xl text-white" />,
+      title: "Artisanat de Transformation/Production",
+      description: "Transformation de matières premières locales en produits finis",
       bgColor: "bg-gradient-to-br from-primary-500 to-primary-600"
     },
     {
-      icon: <FaSeedling className="text-4xl text-white" />,
-      title: "Cosmétiques",
-      description: "Produits de beauté naturels et biologiques",
+      icon: <FaHandshake className="text-4xl text-white" />,
+      title: "Artisanat de Service",
+      description: "Prestations artisanales techniques et utilitaires",
       bgColor: "bg-gradient-to-br from-accent-500 to-accent-600"
     },
     {
-      icon: <BiSolidFactory className="text-4xl text-white" />,
-      title: "Textile & Artisanat",
-      description: "Créations artisanales et textiles traditionnels",
+      icon: <FaHeart className="text-4xl text-white" />,
+      title: "Artisanat d'Art",
+      description: "Créativité et forte connotation culturelle nigérienne",
       bgColor: "bg-gradient-to-br from-primary-600 to-accent-600"
     }
   ];
@@ -511,8 +511,7 @@ export default function Home() {
                 <span>Marché de la Réfondation</span>
               </h4>
               <p className="text-white/80">
-                Initiative du Ministère du Commerce et de l'Industrie du Niger
-              </p>
+               </p>
             </div>
             <div>
               <h4 className="text-xl font-bold mb-4">Contact</h4>

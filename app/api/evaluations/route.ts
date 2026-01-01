@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { verifyToken } from '@/app/lib/auth';
+import { sendApprovalEmail, sendRejectionEmail } from '@/app/lib/email';
 
 // POST - Créer une nouvelle évaluation
 export async function POST(request: NextRequest) {
@@ -28,7 +29,8 @@ export async function POST(request: NextRequest) {
       scores, 
       commentaires, 
       scoreTotal, 
-      decision 
+      decision,
+      estValidationFinale
     } = body;
 
     if (!numeroReference || !scores || scoreTotal === undefined) {
@@ -50,6 +52,72 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Récupérer l'utilisateur pour vérifier son rôle
+    const user = await prisma.admin.findUnique({
+      where: { id: decoded.id }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Utilisateur non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier si l'utilisateur a déjà évalué cette demande
+    const existingEvaluation = await prisma.evaluation.findUnique({
+      where: {
+        demandeId_evaluateurId: {
+          demandeId: demande.id,
+          evaluateurId: decoded.id
+        }
+      }
+    });
+
+    if (existingEvaluation) {
+      return NextResponse.json(
+        { success: false, message: 'Vous avez déjà évalué cette demande' },
+        { status: 400 }
+      );
+    }
+
+    // Seul le président peut donner une décision finale
+    const isPresident = user.role === 'PRESIDENT_JURY';
+    const canMakeFinalDecision = isPresident && estValidationFinale;
+
+    // Vérifier que tous les jurys ont évalué avant la validation finale
+    if (canMakeFinalDecision) {
+      const juryMembers = await prisma.admin.findMany({
+        where: {
+          role: 'JURY',
+          actif: true
+        }
+      });
+
+      const evaluationsForDemande = await prisma.evaluation.findMany({
+        where: {
+          demandeId: demande.id
+        },
+        include: {
+          evaluateur: true
+        }
+      });
+
+      const juryEvaluations = evaluationsForDemande.filter(
+        e => e.evaluateur.role === 'JURY'
+      );
+
+      if (juryEvaluations.length < juryMembers.length) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: `Tous les membres du jury doivent évaluer avant la validation finale (${juryEvaluations.length}/${juryMembers.length})` 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Créer l'évaluation
     const evaluation = await prisma.evaluation.create({
       data: {
@@ -58,7 +126,8 @@ export async function POST(request: NextRequest) {
         scores: JSON.stringify(scores),
         commentaires: commentaires ? JSON.stringify(commentaires) : null,
         scoreTotal: parseFloat(scoreTotal),
-        decision: decision || null,
+        decision: canMakeFinalDecision ? decision : null,
+        estValidationFinale: canMakeFinalDecision || false,
       },
       include: {
         evaluateur: {
@@ -73,8 +142,8 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Mettre à jour le statut de la demande si une décision est prise
-    if (decision) {
+    // Mettre à jour le statut de la demande seulement si c'est une validation finale
+    if (canMakeFinalDecision && decision) {
       await prisma.demandeExposant.update({
         where: { id: demande.id },
         data: {
@@ -83,16 +152,54 @@ export async function POST(request: NextRequest) {
           notesAdmin: commentaires ? JSON.stringify(commentaires) : null,
         }
       });
+
+      // Envoyer un email de décision si l'email est fourni
+      if (demande.email) {
+        const candidateName = `${demande.prenom} ${demande.nom}`;
+        try {
+          if (decision === 'APPROUVE') {
+            await sendApprovalEmail(
+              demande.email,
+              candidateName,
+              demande.numeroReference
+            );
+            console.log(`Email d'approbation envoyé à ${demande.email}`);
+          } else if (decision === 'REJETE') {
+            const reason = commentaires?.raisonRejet || body.raisonRejet || undefined;
+            await sendRejectionEmail(
+              demande.email,
+              candidateName,
+              demande.numeroReference,
+              reason
+            );
+            console.log(`Email de rejet envoyé à ${demande.email}`);
+          }
+        } catch (emailError) {
+          // Ne pas bloquer l'évaluation si l'email échoue
+          console.error('Erreur lors de l\'envoi de l\'email de décision:', emailError);
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Évaluation enregistrée avec succès',
+      message: canMakeFinalDecision 
+        ? 'Validation finale enregistrée avec succès' 
+        : 'Évaluation enregistrée avec succès',
       data: evaluation
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur lors de la création de l\'évaluation:', error);
+    
+    // Gérer l'erreur de contrainte unique
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, message: 'Vous avez déjà évalué cette demande' },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, message: 'Erreur serveur' },
       { status: 500 }

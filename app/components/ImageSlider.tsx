@@ -16,9 +16,9 @@ export default function ImageSlider() {
 
   const slides: SlideImage[] = [
     {
-      src: "/exposition-sur-le-marche-des-fruits-frais.jpg",
+      src: "/produits locaux.jpeg",
       alt: "Exposition marché fruits frais",
-      title: "Produits Frais Locaux",
+      title: "Produits Locaux",
       description: "Valorisation des fruits et légumes nigériens"
     },
     {
@@ -28,7 +28,7 @@ export default function ImageSlider() {
       description: "Des kiosques modernes pour les entrepreneurs"
     },
     {
-      src: "/portrait-photorealiste-d-une-personne-gerant-et-proprietaire-de-son-entreprise.jpg",
+      src: "/select-1_10.jpg",
       alt: "Portrait entrepreneur",
       title: "Entrepreneurs Locaux",
       description: "Soutien aux femmes et jeunes entrepreneurs"
@@ -44,24 +44,6 @@ export default function ImageSlider() {
       alt: "Commerce local",
       title: "Commerce Dynamique",
       description: "Un marché moderne pour le centenaire de Niamey"
-    },
-    {
-      src: "/huile d'arachide.jpg",
-      alt: "Huile d'arachide",
-      title: "Agroalimentaire",
-      description: "Produits alimentaires transformés localement"
-    },
-    {
-      src: "/piment.jpg",
-      alt: "Piment",
-      title: "Épices du Niger",
-      description: "Saveurs authentiques du terroir nigérien"
-    },
-    {
-      src: "/riz du niger.jpeg",
-      alt: "Riz du Niger",
-      title: "Riz Local",
-      description: "Production céréalière nationale de qualité"
     }
   ];
 

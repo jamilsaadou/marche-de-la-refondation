@@ -210,51 +210,6 @@ export default function MarchePage() {
             </div>
           </div>
 
-          {/* Calendrier indicatif */}
-          <div className="glass-effect rounded-3xl p-8 mb-8 bg-gradient-to-br from-primary-50/50 to-accent-50/50">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                <FaCalendarAlt className="text-white text-xl" />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900">Calendrier indicatif</h4>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="backdrop-blur-md bg-white/60 rounded-xl p-4 border border-primary-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Début de dépôt des candidatures</span>
-                  <span className="text-primary-700 font-bold bg-primary-100 px-3 py-1 rounded-full text-sm">8 décembre 2025</span>
-                </div>
-              </div>
-              <div className="backdrop-blur-md bg-white/60 rounded-xl p-4 border border-accent-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Fin de dépôt des candidatures</span>
-                  <span className="text-accent-700 font-bold bg-accent-100 px-3 py-1 rounded-full text-sm">23 décembre 2025</span>
-                </div>
-              </div>
-              <div className="backdrop-blur-md bg-white/60 rounded-xl p-4 border border-primary-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Évaluation des dossiers</span>
-                  <span className="text-primary-700 font-bold bg-primary-100 px-3 py-1 rounded-full text-sm">23-25 décembre 2025</span>
-                </div>
-              </div>
-              <div className="backdrop-blur-md bg-white/60 rounded-xl p-4 border border-accent-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Publication liste définitive</span>
-                  <span className="text-accent-700 font-bold bg-accent-100 px-3 py-1 rounded-full text-sm">27 décembre 2025</span>
-                </div>
-              </div>
-            </div>
-            <div className="backdrop-blur-md bg-gradient-to-r from-primary-100/60 to-accent-100/60 rounded-xl p-4 border border-primary-300 mt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <FaStore className="text-primary-700" />
-                  <span className="text-gray-700 font-medium">Installation des stands</span>
-                </div>
-                <span className="text-primary-700 font-bold">3 jours avant l'ouverture du marché</span>
-              </div>
-            </div>
-          </div>
-
           {/* Contact */}
           <div className="glass-effect rounded-3xl p-8 bg-gradient-to-br from-primary-600 to-accent-600 text-white">
             <div className="text-center">

@@ -34,8 +34,9 @@ export default function UtilisateursContent() {
   const roles = [
     { id: 'SUPER_ADMIN', label: 'Super Admin', color: 'red', description: 'Accès complet à toutes les fonctionnalités' },
     { id: 'ADMIN', label: 'Admin', color: 'orange', description: 'Gestion des utilisateurs et accès administratifs' },
+    { id: 'PRESIDENT_JURY', label: 'Président du Jury', color: 'indigo', description: 'Validation finale après évaluation de tous les jurys' },
+    { id: 'JURY', label: 'Jury', color: 'purple', description: 'Évaluation individuelle des demandes d\'exposants' },
     { id: 'SUPERVISEUR', label: 'Superviseur', color: 'blue', description: 'Supervision des opérations et validation' },
-    { id: 'JURY', label: 'Jury', color: 'purple', description: 'Évaluation des demandes d\'exposants' },
     { id: 'GESTIONNAIRE', label: 'Gestionnaire', color: 'green', description: 'Gestion quotidienne des kiosques et exposants' },
     { id: 'COMPTABLE', label: 'Comptable', color: 'yellow', description: 'Gestion financière et paiements' },
   ];
@@ -250,9 +251,9 @@ export default function UtilisateursContent() {
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <p className="text-sm text-gray-600 mb-1">Jury</p>
+          <p className="text-sm text-gray-600 mb-1">Membres du Jury</p>
           <p className="text-2xl font-bold text-purple-600">
-            {users.filter(u => u.role === 'JURY').length}
+            {users.filter(u => u.role === 'JURY' || u.role === 'PRESIDENT_JURY').length}
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4">
@@ -547,22 +548,24 @@ export default function UtilisateursContent() {
                 <th className="px-4 py-3 text-left font-medium text-gray-700">Permission</th>
                 <th className="px-4 py-3 text-center font-medium text-red-700">Super Admin</th>
                 <th className="px-4 py-3 text-center font-medium text-orange-700">Admin</th>
-                <th className="px-4 py-3 text-center font-medium text-blue-700">Superviseur</th>
+                <th className="px-4 py-3 text-center font-medium text-indigo-700">Président Jury</th>
                 <th className="px-4 py-3 text-center font-medium text-purple-700">Jury</th>
+                <th className="px-4 py-3 text-center font-medium text-blue-700">Superviseur</th>
                 <th className="px-4 py-3 text-center font-medium text-green-700">Gestionnaire</th>
                 <th className="px-4 py-3 text-center font-medium text-yellow-700">Comptable</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {[
-                { label: 'Gestion des utilisateurs', superAdmin: true, admin: true, superviseur: false, jury: false, gestionnaire: false, comptable: false },
-                { label: 'Gestion des demandes', superAdmin: true, admin: true, superviseur: true, jury: true, gestionnaire: false, comptable: false },
-                { label: 'Évaluation candidats', superAdmin: true, admin: true, superviseur: true, jury: true, gestionnaire: false, comptable: false },
-                { label: 'Gestion exposants', superAdmin: true, admin: true, superviseur: true, jury: false, gestionnaire: true, comptable: false },
-                { label: 'Attribution kiosques', superAdmin: true, admin: true, superviseur: true, jury: false, gestionnaire: true, comptable: false },
-                { label: 'Gestion paiements', superAdmin: true, admin: true, superviseur: true, jury: false, gestionnaire: false, comptable: true },
-                { label: 'Rapports financiers', superAdmin: true, admin: true, superviseur: true, jury: false, gestionnaire: false, comptable: true },
-                { label: 'Paramètres système', superAdmin: true, admin: true, superviseur: false, jury: false, gestionnaire: false, comptable: false },
+                { label: 'Gestion des utilisateurs', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: false, gestionnaire: false, comptable: false },
+                { label: 'Gestion des demandes', superAdmin: true, admin: true, presidentJury: true, jury: true, superviseur: true, gestionnaire: false, comptable: false },
+                { label: 'Évaluation candidats', superAdmin: true, admin: true, presidentJury: true, jury: true, superviseur: true, gestionnaire: false, comptable: false },
+                { label: 'Validation finale (décision)', superAdmin: true, admin: true, presidentJury: true, jury: false, superviseur: false, gestionnaire: false, comptable: false },
+                { label: 'Gestion exposants', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: true, gestionnaire: true, comptable: false },
+                { label: 'Attribution kiosques', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: true, gestionnaire: true, comptable: false },
+                { label: 'Gestion paiements', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: true, gestionnaire: false, comptable: true },
+                { label: 'Rapports financiers', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: true, gestionnaire: false, comptable: true },
+                { label: 'Paramètres système', superAdmin: true, admin: true, presidentJury: false, jury: false, superviseur: false, gestionnaire: false, comptable: false },
               ].map((perm, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{perm.label}</td>
@@ -573,10 +576,13 @@ export default function UtilisateursContent() {
                     {perm.admin ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {perm.superviseur ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}
+                    {perm.presidentJury ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {perm.jury ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {perm.superviseur ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {perm.gestionnaire ? <FaCheck className="text-green-600 mx-auto" /> : <FaTimes className="text-red-400 mx-auto" />}

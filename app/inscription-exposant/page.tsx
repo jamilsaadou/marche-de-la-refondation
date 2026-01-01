@@ -12,7 +12,9 @@ import {
   FaCheckCircle,
   FaArrowLeft,
   FaUpload,
-  FaFileAlt
+  FaFileAlt,
+  FaTimes,
+  FaImage
 } from "react-icons/fa";
 import { MdBusiness, MdDescription } from "react-icons/md";
 import Link from 'next/link';
@@ -68,6 +70,7 @@ interface FormData {
   carteIdentite: File | null;
   registreCommerceDoc: File | null;
   listeProduitsFile: File | null;
+  photoProduits: File[]; // Tableau de photos de produits
 }
 
 interface FormErrors {
@@ -109,7 +112,8 @@ export default function InscriptionExposantPage() {
     acceptFraisStand: false,
     carteIdentite: null,
     registreCommerceDoc: null,
-    listeProduitsFile: null
+    listeProduitsFile: null,
+    photoProduits: [] // Initialiser le tableau vide
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -179,6 +183,27 @@ export default function InscriptionExposantPage() {
         [fieldName]: ''
       }));
     }
+  };
+
+  // Handler pour gérer plusieurs photos de produits
+  const handleProductPhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      // Limiter à 5 photos maximum
+      const limitedFiles = files.slice(0, 5);
+      setFormData(prev => ({
+        ...prev,
+        photoProduits: [...prev.photoProduits, ...limitedFiles].slice(0, 5)
+      }));
+    }
+  };
+
+  // Supprimer une photo de produit
+  const removeProductPhoto = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      photoProduits: prev.photoProduits.filter((_, i) => i !== index)
+    }));
   };
 
   const validateStep = (step: number): boolean => {
@@ -301,17 +326,56 @@ export default function InscriptionExposantPage() {
         listeProduitsFileUrl = await uploadFile(formData.listeProduitsFile);
       }
 
+      // Upload des photos de produits
+      const photoProduitsUrls: string[] = [];
+      if (formData.photoProduits.length > 0) {
+        for (const photo of formData.photoProduits) {
+          const photoUrl = await uploadFile(photo);
+          if (photoUrl) {
+            photoProduitsUrls.push(photoUrl);
+          }
+        }
+      }
+
       // Préparer les données à envoyer (sans les objets File)
       const dataToSend = {
-        ...formData,
-        tailleKiosque: tailleStandUniforme, // Tous les stands sont uniformes de 4m²
+        typeInscription: formData.typeInscription,
+        localisation: formData.localisation,
+        region: formData.region,
+        nom: formData.nom,
+        prenom: formData.prenom,
+        nationalite: formData.nationalite,
+        age: formData.age,
+        sexe: formData.sexe,
+        telephone: formData.telephone,
+        email: formData.email,
+        adresse: formData.adresse,
+        nomEntreprise: formData.nomEntreprise,
+        secteurActivite: formData.secteurActivite,
+        registreCommerce: formData.registreCommerce,
+        // Mapper les noms avec accents vers les noms sans accent
+        produitsProposes: formData.produitsProposés,
+        listeProduitsDetaillee: formData.listeProduitsDetaillée,
+        capaciteProduction: formData.capaciteProduction,
+        experienceAnterieure: formData.experienceAnterieure,
+        // Nouveaux champs pour l'évaluation
+        origineMatieresPremieres: formData.origineMatieresPremieres,
+        transformationAuNiger: formData.transformationAuNiger,
+        innovation: formData.innovation,
+        regulariteApprovisionnement: formData.regulariteApprovisionnement,
+        adaptationDemandeCroissante: formData.adaptationDemandeCroissante,
+        nombreFemmes: formData.nombreFemmes,
+        nombreJeunes: formData.nombreJeunes,
+        certificatConformite: formData.certificatConformite,
+        sitePreference: formData.sitePreference,
+        tailleKiosque: tailleStandUniforme,
+        nombreEmployes: formData.nombreEmployes,
+        acceptEngagement: formData.acceptEngagement,
+        acceptFraisStand: formData.acceptFraisStand,
         carteIdentiteUrl,
         registreCommerceDocUrl,
         listeProduitsFileUrl,
-        // Retirer les objets File
-        carteIdentite: undefined,
-        registreCommerceDoc: undefined,
-        listeProduitsFile: undefined,
+        photoProduitsUrls: JSON.stringify(photoProduitsUrls), // Convertir en JSON string
       };
 
       // Envoyer les données à l'API
@@ -338,6 +402,14 @@ export default function InscriptionExposantPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handler pour démarrer une nouvelle demande
+  const handleNewApplication = () => {
+    // Effacer le numéro de référence du localStorage
+    localStorage.removeItem('lastReferenceNumber');
+    // Recharger la page pour réinitialiser le formulaire
+    window.location.reload();
   };
 
   if (isSuccess) {
@@ -1022,6 +1094,71 @@ export default function InscriptionExposantPage() {
                 {errors.experienceAnterieure && <p className="text-red-500 text-sm mt-1">{errors.experienceAnterieure}</p>}
               </div>
 
+              {/* Section Photos des produits */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
+                <div className="mb-4">
+                  <h4 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
+                    <FaImage className="inline mr-2 text-blue-600" />
+                    Photos de vos produits (optionnel)
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Ajoutez jusqu'à 5 photos pour mieux présenter vos produits aux évaluateurs (JPG, PNG - Max 5MB chacune)
+                  </p>
+                </div>
+
+                {/* Zone d'upload */}
+                <div className="border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:border-blue-500 transition-all cursor-pointer bg-white/50">
+                  <input
+                    type="file"
+                    id="photoProduits"
+                    accept=".jpg,.jpeg,.png"
+                    multiple
+                    onChange={handleProductPhotosChange}
+                    className="hidden"
+                    disabled={formData.photoProduits.length >= 5}
+                  />
+                  <label htmlFor="photoProduits" className="cursor-pointer">
+                    <FaImage className="text-5xl text-blue-400 mx-auto mb-3" />
+                    <p className="text-gray-700 font-medium mb-1">
+                      {formData.photoProduits.length === 0 
+                        ? 'Cliquez pour ajouter des photos de vos produits'
+                        : `${formData.photoProduits.length}/5 photo(s) ajoutée(s)`
+                      }
+                    </p>
+                    <p className="text-sm text-gray-500">JPG, PNG (Max 5MB par photo, 5 photos maximum)</p>
+                  </label>
+                </div>
+
+                {/* Prévisualisation des photos */}
+                {formData.photoProduits.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Photos sélectionnées :</p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {formData.photoProduits.map((photo, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-blue-200">
+                            <img
+                              src={URL.createObjectURL(photo)}
+                              alt={`Produit ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeProductPhoto(index)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+                            title="Supprimer"
+                          >
+                            <FaTimes className="text-xs" />
+                          </button>
+                          <p className="text-xs text-gray-600 mt-1 truncate">{photo.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Informations supplémentaires pour l'évaluation */}
               <div className="border-t-2 border-primary-200 pt-6 mt-6">
                 <h4 className="text-lg font-bold text-gray-900 mb-4 text-primary-700">
@@ -1426,7 +1563,7 @@ export default function InscriptionExposantPage() {
                 <span>Marché de la Réfondation</span>
               </h4>
               <p className="text-white/80">
-                Initiative du Ministère du Commerce et de l'Industrie du Niger
+                
               </p>
             </div>
             <div>
