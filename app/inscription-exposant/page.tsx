@@ -972,7 +972,7 @@ export default function InscriptionExposantPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <FaIndustry className="inline mr-2 text-primary-600" />
-                    Secteur d'activité *
+                    Domaine d'activité *
                   </label>
                   <select
                     name="secteurActivite"
