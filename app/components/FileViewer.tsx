@@ -28,22 +28,46 @@ export default function FileViewer({ fileUrl, fileName, onClose, showModal = fal
   }
 
   // Extraire le nom du fichier depuis l'URL
-  const extractedFileName = fileName || fileUrl.split('/').pop() || 'document';
+  const extractedFileName = fileName || fileUrl.split('/').pop() || fileUrl.split('?')[0].split('/').pop() || 'document';
   
   // Convertir l'URL pour utiliser l'API de fichiers
   // Si l'URL commence par /uploads/ ou contient uploads/, extraire le nom du fichier
   let apiFileUrl = fileUrl;
   if (fileUrl.includes('/uploads/documents/')) {
-    const filename = fileUrl.split('/uploads/documents/').pop();
+    const filename = fileUrl.split('/uploads/documents/').pop()?.split('?')[0];
     apiFileUrl = `/api/files/${filename}`;
   } else if (fileUrl.startsWith('/uploads/')) {
-    apiFileUrl = `/api/files/${fileUrl.split('/').pop()}`;
+    const filename = fileUrl.split('/').pop()?.split('?')[0];
+    apiFileUrl = `/api/files/${filename}`;
   }
 
-  // Déterminer le type de fichier
-  const fileExtension = extractedFileName.split('.').pop()?.toLowerCase();
+  // Déterminer le type de fichier - Détection plus robuste
+  // Extraire l'extension du nom de fichier ou de l'URL
+  let fileExtension = '';
+  
+  // Essayer d'extraire l'extension depuis le nom de fichier
+  if (extractedFileName && extractedFileName.includes('.')) {
+    fileExtension = extractedFileName.split('.').pop()?.toLowerCase() || '';
+  }
+  
+  // Si pas d'extension trouvée, essayer depuis l'URL originale
+  if (!fileExtension && fileUrl.includes('.')) {
+    const urlWithoutQuery = fileUrl.split('?')[0];
+    fileExtension = urlWithoutQuery.split('.').pop()?.toLowerCase() || '';
+  }
+  
+  // Vérifier le type de fichier
   const isPDF = fileExtension === 'pdf';
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExtension);
+  
+  console.log('FileViewer Debug:', { 
+    fileUrl, 
+    extractedFileName, 
+    fileExtension, 
+    isPDF, 
+    isImage,
+    apiFileUrl 
+  });
 
   const handleDownload = () => {
     const link = document.createElement('a');
