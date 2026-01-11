@@ -31,9 +31,14 @@ export default function FileViewer({ fileUrl, fileName, onClose, showModal = fal
   const extractedFileName = fileName || fileUrl.split('/').pop() || 'document';
   
   // Convertir l'URL pour utiliser l'API de fichiers
-  const apiFileUrl = fileUrl.startsWith('/uploads/') 
-    ? `/api/files/${fileUrl.split('/').pop()}`
-    : fileUrl;
+  // Si l'URL commence par /uploads/ ou contient uploads/, extraire le nom du fichier
+  let apiFileUrl = fileUrl;
+  if (fileUrl.includes('/uploads/documents/')) {
+    const filename = fileUrl.split('/uploads/documents/').pop();
+    apiFileUrl = `/api/files/${filename}`;
+  } else if (fileUrl.startsWith('/uploads/')) {
+    apiFileUrl = `/api/files/${fileUrl.split('/').pop()}`;
+  }
 
   // Déterminer le type de fichier
   const fileExtension = extractedFileName.split('.').pop()?.toLowerCase();

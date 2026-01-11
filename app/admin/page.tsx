@@ -2302,7 +2302,7 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
                       >
                         <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200 hover:border-primary-500 transition-all">
                           <img
-                            src={photoUrl}
+                            src={photoUrl.includes('/uploads/documents/') ? `/api/files/${photoUrl.split('/uploads/documents/').pop()}` : photoUrl}
                             alt={`Produit ${index + 1}`}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />
@@ -2342,7 +2342,7 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
           </button>
           <div className="max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
             <img
-              src={selectedPhoto}
+              src={selectedPhoto.includes('/uploads/documents/') ? `/api/files/${selectedPhoto.split('/uploads/documents/').pop()}` : selectedPhoto}
               alt="Photo agrandie"
               className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
             />
