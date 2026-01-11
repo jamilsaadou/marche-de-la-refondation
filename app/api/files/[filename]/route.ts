@@ -40,7 +40,9 @@ export async function GET(
     }
 
     // Construire le chemin complet du fichier
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'documents', filename);
+    // Utiliser UPLOADS_DIR si défini (pour production), sinon utiliser le dossier local
+    const uploadsDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads', 'documents');
+    const filePath = path.join(uploadsDir, filename);
 
     // Lire le fichier
     const fileBuffer = await readFile(filePath);

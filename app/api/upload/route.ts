@@ -172,11 +172,13 @@ export async function POST(request: NextRequest) {
     const fileName = generateSecureFileName(file.name);
     
     // Créer le dossier uploads s'il n'existe pas
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
+    // Utiliser UPLOADS_DIR si défini (pour production), sinon utiliser le dossier local
+    const uploadsDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads', 'documents');
     try {
       await mkdir(uploadsDir, { recursive: true });
     } catch (error) {
-      // Le dossier existe déjà
+      // Le dossier existe déjà ou erreur de permissions
+      console.log('Dossier uploads:', uploadsDir, error);
     }
     
     // Sauvegarder le fichier
