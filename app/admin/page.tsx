@@ -32,6 +32,7 @@ import { MdDashboard } from "react-icons/md";
 import UtilisateursContent from './components/UtilisateursContent';
 import LogsContent from './components/LogsContent';
 import PrintDemande from '../components/PrintDemande';
+import { FileViewerButton } from '../components/FileViewer';
 
 // Interface pour l'utilisateur connecté
 interface UserInfo {
@@ -2210,15 +2211,11 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
               )}
             </div>
             {demande.carteIdentiteUrl ? (
-              <a 
-                href={demande.carteIdentiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
-              >
-                <FaFileAlt />
-                <span className="text-sm">Voir le document</span>
-              </a>
+              <FileViewerButton 
+                fileUrl={demande.carteIdentiteUrl}
+                fileName="Carte d'identité"
+                label="Voir le document"
+              />
             ) : (
               <p className="text-sm text-gray-500">Non fourni</p>
             )}
@@ -2239,15 +2236,11 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
               )}
             </div>
             {demande.registreCommerceDocUrl ? (
-              <a 
-                href={demande.registreCommerceDocUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
-              >
-                <FaFileAlt />
-                <span className="text-sm">Voir le document</span>
-              </a>
+              <FileViewerButton 
+                fileUrl={demande.registreCommerceDocUrl}
+                fileName="Registre de commerce"
+                label="Voir le document"
+              />
             ) : demande.registreCommerce ? (
               <p className="text-sm text-gray-600">N° {demande.registreCommerce}</p>
             ) : (
@@ -2270,15 +2263,11 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
               )}
             </div>
             {demande.listeProduitsFileUrl ? (
-              <a 
-                href={demande.listeProduitsFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
-              >
-                <FaFileAlt />
-                <span className="text-sm">Voir le document</span>
-              </a>
+              <FileViewerButton 
+                fileUrl={demande.listeProduitsFileUrl}
+                fileName="Liste des produits"
+                label="Voir le document"
+              />
             ) : (
               <p className="text-sm text-gray-500">Non fourni</p>
             )}
