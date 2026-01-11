@@ -994,7 +994,7 @@ export default function InscriptionExposantPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <FaFileAlt className="inline mr-2 text-primary-600" />
-                  Registre de commerce / Agrément
+                  Registre de commerce/Nif / Agrément
                 </label>
                 <div className="flex items-center space-x-6">
                   <label className="flex items-center">
@@ -1414,7 +1414,7 @@ export default function InscriptionExposantPage() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       <FaFileAlt className="inline mr-2 text-primary-600" />
-                      Registre de commerce (optionnel)
+                      Registre de commerce et NIF (optionnel)
                     </label>
                     <div className="border-2 border-dashed rounded-xl p-6 text-center hover:border-primary-500 transition-all cursor-pointer border-gray-300">
                       <input
