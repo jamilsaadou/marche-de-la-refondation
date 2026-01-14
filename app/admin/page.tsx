@@ -1226,10 +1226,15 @@ function DemandesContent() {
   const [totalDemandes, setTotalDemandes] = useState(0);
   const [evaluations, setEvaluations] = useState<{[key: string]: any}>({});
   const [exporting, setExporting] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchInput, setSearchInput] = useState<string>('');
 
   useEffect(() => {
     fetchDemandes();
-  }, [page]);
+  }, [page, sortOrder, sortBy, statusFilter, searchQuery]);
 
   const fetchDemandes = async () => {
     setLoading(true);
@@ -1242,7 +1247,16 @@ function DemandesContent() {
         return;
       }
 
-      const response = await fetch(`/api/demandes?page=${page}&limit=10&admin=true`, {
+      // Construire l'URL avec les paramètres de tri, filtrage et recherche
+      let url = `/api/demandes?page=${page}&limit=10&admin=true&sortOrder=${sortOrder}&sortBy=${sortBy}`;
+      if (statusFilter) {
+        url += `&status=${statusFilter}`;
+      }
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -1495,36 +1509,147 @@ function DemandesContent() {
 
   return (
     <div className="space-y-6">
-      {/* Actions Bar */}
-      <div className="bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={fetchDemandes}
-            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-          >
-            <FaSearch />
-            <span>Rafraîchir</span>
-          </button>
-          <button 
-            onClick={handleExportExcel}
-            disabled={exporting}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exporting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Export en cours...</span>
-              </>
-            ) : (
-              <>
-                <FaDownload />
-                <span>Exporter Excel</span>
-              </>
-            )}
-          </button>
+      {/* Actions Bar avec filtres et tri */}
+      <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={fetchDemandes}
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              <FaSearch />
+              <span>Rafraîchir</span>
+            </button>
+            <button 
+              onClick={handleExportExcel}
+              disabled={exporting}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Export en cours...</span>
+                </>
+              ) : (
+                <>
+                  <FaDownload />
+                  <span>Exporter Excel</span>
+                </>
+              )}
+            </button>
+          </div>
+          <div className="text-sm text-gray-600">
+            <strong>{totalDemandes}</strong> demande{totalDemandes > 1 ? 's' : ''} au total
+          </div>
         </div>
-        <div className="text-sm text-gray-600">
-          <strong>{totalDemandes}</strong> demande{totalDemandes > 1 ? 's' : ''} au total
+        
+        {/* Barre de recherche */}
+        <div className="flex items-center gap-4 pb-4 border-b">
+          <div className="flex-1 relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, prénom, entreprise, email, téléphone, n° référence..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchQuery(searchInput);
+                  setPage(1); // Réinitialiser à la page 1
+                }
+              }}
+              className="w-full pl-10 pr-24 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
+              {searchInput && (
+                <button
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearchQuery('');
+                    setPage(1);
+                  }}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Effacer"
+                >
+                  <FaTimes />
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setSearchQuery(searchInput);
+                  setPage(1);
+                }}
+                className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors"
+              >
+                Rechercher
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Filtres et Tri */}
+        <div className="flex flex-wrap items-center gap-4 pt-4 border-t">
+          <div className="flex items-center space-x-2">
+            <FaFilter className="text-gray-500" />
+            <label className="text-sm font-medium text-gray-700">Filtres:</label>
+          </div>
+          
+          {/* Filtre par statut */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1); // Réinitialiser à la page 1
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+          >
+            <option value="">Tous les statuts</option>
+            <option value="EN_ATTENTE">En attente</option>
+            <option value="APPROUVE">Approuvé</option>
+            <option value="REJETE">Rejeté</option>
+          </select>
+          
+          <div className="h-6 w-px bg-gray-300"></div>
+          
+          {/* Tri */}
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium text-gray-700">Trier par:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+            >
+              <option value="createdAt">Date d'inscription</option>
+              <option value="nom">Nom</option>
+              <option value="status">Statut</option>
+            </select>
+            
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className={`p-2 rounded-lg border transition-colors ${
+                sortOrder === 'asc' 
+                  ? 'bg-primary-50 border-primary-300 text-primary-700' 
+                  : 'bg-gray-50 border-gray-300 text-gray-700'
+              } hover:bg-primary-100`}
+              title={sortOrder === 'asc' ? 'Ordre croissant (premiers inscrits en premier)' : 'Ordre décroissant (derniers inscrits en premier)'}
+            >
+              {sortOrder === 'asc' ? '↑ Croissant' : '↓ Décroissant'}
+            </button>
+          </div>
+          
+          {/* Indicateur d'ordre */}
+          {sortBy === 'createdAt' && (
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              sortOrder === 'asc' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-blue-100 text-blue-800'
+            }`}>
+              {sortOrder === 'asc' 
+                ? '✓ Premiers inscrits en premier' 
+                : 'Derniers inscrits en premier'
+              }
+            </div>
+          )}
         </div>
       </div>
 

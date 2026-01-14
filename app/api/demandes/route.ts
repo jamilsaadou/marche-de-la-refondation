@@ -206,6 +206,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
     const adminAccess = searchParams.get('admin') === 'true';
+    // Paramètres de tri : par défaut, ordre croissant (premiers inscrits en premier)
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    // Paramètre de recherche
+    const searchQuery = searchParams.get('search') || '';
 
     // Si c'est un accès admin, vérifier l'authentification
     if (adminAccess) {
@@ -243,14 +248,44 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const where = status ? { status } : {};
+    // Construire la clause WHERE avec recherche
+    const where: any = {};
+    
+    // Filtre par statut
+    if (status) {
+      where.status = status;
+    }
+    
+    // Recherche textuelle (sans mode insensitive pour SQLite)
+    if (searchQuery) {
+      where.OR = [
+        { nom: { contains: searchQuery } },
+        { prenom: { contains: searchQuery } },
+        { nomEntreprise: { contains: searchQuery } },
+        { numeroReference: { contains: searchQuery } },
+        { email: { contains: searchQuery } },
+        { telephone: { contains: searchQuery } },
+      ];
+    }
+    
+    // Construire l'objet orderBy dynamiquement
+    const orderBy: any = {};
+    if (sortBy === 'createdAt') {
+      orderBy.createdAt = sortOrder;
+    } else if (sortBy === 'nom') {
+      orderBy.nom = sortOrder;
+    } else if (sortBy === 'status') {
+      orderBy.status = sortOrder;
+    } else {
+      orderBy.createdAt = sortOrder; // Par défaut
+    }
     
     const [demandes, total] = await Promise.all([
       prisma.demandeExposant.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
       prisma.demandeExposant.count({ where }),
     ]);
