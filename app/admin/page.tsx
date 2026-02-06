@@ -26,11 +26,13 @@ import {
   FaTimes,
   FaBars,
   FaFilePdf,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaTrophy
 } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 import UtilisateursContent from './components/UtilisateursContent';
 import LogsContent from './components/LogsContent';
+import PerformanceJuryContent from './components/PerformanceJuryContent';
 import PrintDemande from '../components/PrintDemande';
 import { FileViewerButton } from '../components/FileViewer';
 
@@ -403,11 +405,19 @@ export default function AdminPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   // Vérifier l'authentification au chargement
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!isSuperAdmin && selectedSection === 'performances-jury') {
+      setSelectedSection('dashboard');
+    }
+  }, [isSuperAdmin, selectedSection, user]);
 
   const checkAuth = async () => {
     try {
@@ -530,6 +540,13 @@ export default function AdminPage() {
       color: "text-indigo-600"
     },
     {
+      id: 'performances-jury',
+      icon: <FaTrophy className="text-xl" />,
+      title: "Performance Jurys",
+      color: "text-amber-600",
+      superAdminOnly: true
+    },
+    {
       id: 'inventaire',
       icon: <FaBoxes className="text-xl" />,
       title: "Inventaire",
@@ -573,6 +590,8 @@ export default function AdminPage() {
     },
   ];
 
+  const visibleMenuItems = menuItems.filter((item) => !item.superAdminOnly || isSuperAdmin);
+
   // Contenu pour chaque section
   const renderContent = () => {
     switch(selectedSection) {
@@ -590,6 +609,18 @@ export default function AdminPage() {
         return <PaiementsContent />;
       case 'statistiques':
         return <StatistiquesContent />;
+      case 'performances-jury':
+        if (!isSuperAdmin) {
+          return (
+            <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+              <div className="text-3xl mb-3 text-gray-400">
+                <FaUserShield className="inline" />
+              </div>
+              <p className="text-gray-700 font-medium">Accès réservé au Super Administrateur</p>
+            </div>
+          );
+        }
+        return <PerformanceJuryContent />;
       case 'inventaire':
         return <InventaireContent />;
       case 'communications':
@@ -609,7 +640,8 @@ export default function AdminPage() {
     }
   };
 
-  const currentMenuItem = menuItems.find(item => item.id === selectedSection);
+  const currentMenuItem = visibleMenuItems.find(item => item.id === selectedSection)
+    ?? menuItems.find(item => item.id === selectedSection);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -640,7 +672,7 @@ export default function AdminPage() {
 
         {/* Menu Items */}
         <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-120px)]">
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setSelectedSection(item.id)}
