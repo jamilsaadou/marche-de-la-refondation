@@ -202,8 +202,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const numeroReference = searchParams.get('numeroReference');
     const status = searchParams.get('status');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const handledByMeParam = searchParams.get('handledByMe');
+    const handledByMe = handledByMeParam === 'true' ? true : handledByMeParam === 'false' ? false : null;
+    const rawPage = parseInt(searchParams.get('page') || '1', 10);
+    const rawLimit = parseInt(searchParams.get('limit') || '10', 10);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    const MAX_LIMIT = 100;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, MAX_LIMIT) : 10;
     const skip = (page - 1) * limit;
     const adminAccess = searchParams.get('admin') === 'true';
     // Paramètres de tri : par défaut, ordre croissant (premiers inscrits en premier)
@@ -213,8 +218,9 @@ export async function GET(request: NextRequest) {
     const searchQuery = searchParams.get('search') || '';
 
     // Si c'est un accès admin, vérifier l'authentification
+    let user = null;
     if (adminAccess) {
-      const user = isAuthenticated(request);
+      user = isAuthenticated(request);
       
       if (!user) {
         return NextResponse.json(
@@ -255,6 +261,19 @@ export async function GET(request: NextRequest) {
     if (status) {
       where.status = status;
     }
+
+    // Filtre par traitement utilisateur
+    if (handledByMe !== null) {
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: 'Non autorisé' },
+          { status: 401 }
+        );
+      }
+      where.evaluations = handledByMe
+        ? { some: { evaluateurId: user.id } }
+        : { none: { evaluateurId: user.id } };
+    }
     
     // Recherche textuelle (sans mode insensitive pour SQLite)
     if (searchQuery) {
@@ -290,9 +309,25 @@ export async function GET(request: NextRequest) {
       prisma.demandeExposant.count({ where }),
     ]);
 
+    let demandesWithEvaluation = demandes;
+    if (user && demandes.length > 0) {
+      const evaluations = await prisma.evaluation.findMany({
+        where: {
+          evaluateurId: user.id,
+          demandeId: { in: demandes.map((d: any) => d.id) },
+        },
+        select: { demandeId: true },
+      });
+      const evaluatedIds = new Set(evaluations.map((e) => e.demandeId));
+      demandesWithEvaluation = demandes.map((d: any) => ({
+        ...d,
+        hasUserEvaluated: evaluatedIds.has(d.id),
+      }));
+    }
+
     return NextResponse.json({
       success: true,
-      data: demandes,
+      data: demandesWithEvaluation,
       pagination: {
         page,
         limit,

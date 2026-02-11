@@ -45,6 +45,41 @@ interface UserInfo {
   role: string;
 }
 
+const DEMANDES_PAGE_SIZE = 100;
+
+const fetchAllDemandes = async (token: string) => {
+  let page = 1;
+  let totalPages = 1;
+  const allDemandes: any[] = [];
+
+  while (page <= totalPages) {
+    const response = await fetch(
+      `/api/demandes?page=${page}&limit=${DEMANDES_PAGE_SIZE}&admin=true&sortOrder=asc&sortBy=createdAt`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Erreur lors de la récupération des demandes');
+    }
+
+    allDemandes.push(...data.data);
+
+    const nextTotalPages = data.pagination?.totalPages;
+    totalPages = typeof nextTotalPages === 'number' && nextTotalPages > 0 ? nextTotalPages : page;
+    if (data.data.length === 0) {
+      break;
+    }
+    page += 1;
+  }
+
+  return allDemandes;
+};
+
 // PDF Generation Function
 const generateApprovalPDF = async (demande: any, evaluationScores: any, totalScore: number) => {
   // Vérifier si jsPDF est disponible
@@ -797,121 +832,110 @@ function DashboardContent() {
       const token = localStorage.getItem('auth-token');
       if (!token) return;
 
-      const response = await fetch('/api/demandes?admin=true&limit=1000', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const demandes = await fetchAllDemandes(token);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const demandes = data.data;
-          
-          // Statistiques de base
-          const enAttente = demandes.filter((d: any) => d.status === 'EN_ATTENTE').length;
-          const approuvees = demandes.filter((d: any) => d.status === 'APPROUVE').length;
-          const rejetees = demandes.filter((d: any) => d.status === 'REJETE').length;
-          const total = demandes.length;
-          
-          // Statistiques par secteur
-          const parSecteur: any = {};
-          demandes.forEach((d: any) => {
-            const secteur = d.secteurActivite || 'Non spécifié';
-            parSecteur[secteur] = (parSecteur[secteur] || 0) + 1;
-          });
-          
-          // Statistiques par région
-          const parRegion: any = {};
-          demandes.forEach((d: any) => {
-            if (d.region) {
-              parRegion[d.region] = (parRegion[d.region] || 0) + 1;
-            }
-          });
-          
-          // Statistiques par genre
-          const parGenre = { M: 0, F: 0 };
-          demandes.forEach((d: any) => {
-            if (d.sexe === 'M') parGenre.M++;
-            else if (d.sexe === 'F') parGenre.F++;
-          });
-          
-          // Statistiques par localisation
-          const parLocalisation = { niamey: 0, region: 0 };
-          demandes.forEach((d: any) => {
-            if (d.localisation === 'niamey') parLocalisation.niamey++;
-            else if (d.localisation === 'region') parLocalisation.region++;
-          });
-          
-          // Statistiques préférence de site
-          const parSitePreference: any = {};
-          demandes.forEach((d: any) => {
-            const site = d.sitePreference || 'Non spécifié';
-            parSitePreference[site] = (parSitePreference[site] || 0) + 1;
-          });
-          
-          // Origine des matières premières
-          const origineMatieresPremieres: any = {};
-          demandes.forEach((d: any) => {
-            if (d.origineMatieresPremieres) {
-              origineMatieresPremieres[d.origineMatieresPremieres] = (origineMatieresPremieres[d.origineMatieresPremieres] || 0) + 1;
-            }
-          });
-          
-          // Transformation au Niger
-          const transformationNiger: any = {};
-          demandes.forEach((d: any) => {
-            if (d.transformationAuNiger) {
-              transformationNiger[d.transformationAuNiger] = (transformationNiger[d.transformationAuNiger] || 0) + 1;
-            }
-          });
-          
-          // Certificats de conformité
-          const certificatConformite: any = {};
-          demandes.forEach((d: any) => {
-            if (d.certificatConformite) {
-              certificatConformite[d.certificatConformite] = (certificatConformite[d.certificatConformite] || 0) + 1;
-            }
-          });
-          
-          // Calculs moyens
-          const totalEmployes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreEmployes) || 0), 0);
-          const totalFemmes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreFemmes) || 0), 0);
-          const totalJeunes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreJeunes) || 0), 0);
-          const sommeAges = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.age) || 0), 0);
-          const ageMoyen = total > 0 ? Math.round(sommeAges / total) : 0;
-          
-          // Taux d'approbation
-          const tauxApprobation = total > 0 ? ((approuvees / total) * 100).toFixed(1) : 0;
-          
-          // Demandes récentes (5 dernières)
-          const demandesRecentes = demandes
-            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 5);
-          
-          setStats({
-            demandesEnAttente: enAttente,
-            demandesApprouvees: approuvees,
-            demandesRejetees: rejetees,
-            totalDemandes: total,
-            parSecteur,
-            parRegion,
-            parGenre,
-            parLocalisation,
-            parSitePreference,
-            origineMatieresPremieres,
-            transformationNiger,
-            certificatConformite,
-            totalEmployes,
-            totalFemmes,
-            totalJeunes,
-            ageMoyen,
-            tauxApprobation,
-            demandesRecentes,
-            loading: false
-          });
+      // Statistiques de base
+      const enAttente = demandes.filter((d: any) => d.status === 'EN_ATTENTE').length;
+      const approuvees = demandes.filter((d: any) => d.status === 'APPROUVE').length;
+      const rejetees = demandes.filter((d: any) => d.status === 'REJETE').length;
+      const total = demandes.length;
+      
+      // Statistiques par secteur
+      const parSecteur: any = {};
+      demandes.forEach((d: any) => {
+        const secteur = d.secteurActivite || 'Non spécifié';
+        parSecteur[secteur] = (parSecteur[secteur] || 0) + 1;
+      });
+      
+      // Statistiques par région
+      const parRegion: any = {};
+      demandes.forEach((d: any) => {
+        if (d.region) {
+          parRegion[d.region] = (parRegion[d.region] || 0) + 1;
         }
-      }
+      });
+      
+      // Statistiques par genre
+      const parGenre = { M: 0, F: 0 };
+      demandes.forEach((d: any) => {
+        if (d.sexe === 'M') parGenre.M++;
+        else if (d.sexe === 'F') parGenre.F++;
+      });
+      
+      // Statistiques par localisation
+      const parLocalisation = { niamey: 0, region: 0 };
+      demandes.forEach((d: any) => {
+        if (d.localisation === 'niamey') parLocalisation.niamey++;
+        else if (d.localisation === 'region') parLocalisation.region++;
+      });
+      
+      // Statistiques préférence de site
+      const parSitePreference: any = {};
+      demandes.forEach((d: any) => {
+        const site = d.sitePreference || 'Non spécifié';
+        parSitePreference[site] = (parSitePreference[site] || 0) + 1;
+      });
+      
+      // Origine des matières premières
+      const origineMatieresPremieres: any = {};
+      demandes.forEach((d: any) => {
+        if (d.origineMatieresPremieres) {
+          origineMatieresPremieres[d.origineMatieresPremieres] = (origineMatieresPremieres[d.origineMatieresPremieres] || 0) + 1;
+        }
+      });
+      
+      // Transformation au Niger
+      const transformationNiger: any = {};
+      demandes.forEach((d: any) => {
+        if (d.transformationAuNiger) {
+          transformationNiger[d.transformationAuNiger] = (transformationNiger[d.transformationAuNiger] || 0) + 1;
+        }
+      });
+      
+      // Certificats de conformité
+      const certificatConformite: any = {};
+      demandes.forEach((d: any) => {
+        if (d.certificatConformite) {
+          certificatConformite[d.certificatConformite] = (certificatConformite[d.certificatConformite] || 0) + 1;
+        }
+      });
+      
+      // Calculs moyens
+      const totalEmployes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreEmployes) || 0), 0);
+      const totalFemmes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreFemmes) || 0), 0);
+      const totalJeunes = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.nombreJeunes) || 0), 0);
+      const sommeAges = demandes.reduce((sum: number, d: any) => sum + (parseInt(d.age) || 0), 0);
+      const ageMoyen = total > 0 ? Math.round(sommeAges / total) : 0;
+      
+      // Taux d'approbation
+      const tauxApprobation = total > 0 ? ((approuvees / total) * 100).toFixed(1) : 0;
+      
+      // Demandes récentes (5 dernières)
+      const demandesRecentes = demandes
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+      
+      setStats({
+        demandesEnAttente: enAttente,
+        demandesApprouvees: approuvees,
+        demandesRejetees: rejetees,
+        totalDemandes: total,
+        parSecteur,
+        parRegion,
+        parGenre,
+        parLocalisation,
+        parSitePreference,
+        origineMatieresPremieres,
+        transformationNiger,
+        certificatConformite,
+        totalEmployes,
+        totalFemmes,
+        totalJeunes,
+        ageMoyen,
+        tauxApprobation,
+        demandesRecentes,
+        loading: false
+      });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
       setStats((prev: any) => ({ ...prev, loading: false }));
@@ -1254,6 +1278,7 @@ function DemandesContent() {
   const [demandes, setDemandes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalDemandes, setTotalDemandes] = useState(0);
   const [evaluations, setEvaluations] = useState<{[key: string]: any}>({});
@@ -1261,12 +1286,13 @@ function DemandesContent() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortBy, setSortBy] = useState('createdAt');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [handledByMeFilter, setHandledByMeFilter] = useState<'all' | 'handled' | 'unhandled'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchInput, setSearchInput] = useState<string>('');
 
   useEffect(() => {
     fetchDemandes();
-  }, [page, sortOrder, sortBy, statusFilter, searchQuery]);
+  }, [page, pageSize, sortOrder, sortBy, statusFilter, handledByMeFilter, searchQuery]);
 
   const fetchDemandes = async () => {
     setLoading(true);
@@ -1280,9 +1306,14 @@ function DemandesContent() {
       }
 
       // Construire l'URL avec les paramètres de tri, filtrage et recherche
-      let url = `/api/demandes?page=${page}&limit=10&admin=true&sortOrder=${sortOrder}&sortBy=${sortBy}`;
+      let url = `/api/demandes?page=${page}&limit=${pageSize}&admin=true&sortOrder=${sortOrder}&sortBy=${sortBy}`;
       if (statusFilter) {
         url += `&status=${statusFilter}`;
+      }
+      if (handledByMeFilter === 'handled') {
+        url += '&handledByMe=true';
+      } else if (handledByMeFilter === 'unhandled') {
+        url += '&handledByMe=false';
       }
       if (searchQuery) {
         url += `&search=${encodeURIComponent(searchQuery)}`;
@@ -1314,6 +1345,7 @@ function DemandesContent() {
           date: new Date(d.createdAt).toLocaleDateString('fr-FR'),
           statut: d.status === 'EN_ATTENTE' ? 'En attente' : d.status === 'APPROUVE' ? 'Approuvé' : 'Rejeté',
           statusBrut: d.status, // Garder le statut original pour les mises à jour
+          hasUserEvaluated: d.hasUserEvaluated ?? false,
           telephone: d.telephone,
           email: d.email || 'N/A',
           adresse: d.adresse,
@@ -1410,102 +1442,96 @@ function DemandesContent() {
       const token = localStorage.getItem('auth-token');
       if (!token) return;
 
-      // Récupérer toutes les demandes
-      const response = await fetch('/api/demandes?admin=true&limit=1000', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Import dynamique de xlsx
-          const XLSX = await import('xlsx');
-          
-          // Préparer les données pour Excel
-          const excelData = data.data.map((d: any) => ({
-            'N° Référence': d.numeroReference,
-            'Prénom': d.prenom,
-            'Nom': d.nom,
-            'Email': d.email || 'N/A',
-            'Téléphone': d.telephone,
-            'Âge': d.age,
-            'Sexe': d.sexe,
-            'Nationalité': d.nationalite,
-            'Adresse': d.adresse,
-            'Entreprise': d.nomEntreprise || 'N/A',
-            'Registre Commerce': d.registreCommerce || 'N/A',
-            'Secteur d\'activité': d.secteurActivite,
-            'Localisation': d.localisation,
-            'Région': d.region || 'N/A',
-            'Site de préférence': d.sitePreference,
-            'Taille kiosque': d.tailleKiosque,
-            'Nombre d\'employés': d.nombreEmployes,
-            'Nombre de femmes': d.nombreFemmes || 0,
-            'Nombre de jeunes': d.nombreJeunes || 0,
-            'Produits proposés': d.produitsProposes,
-            'Capacité de production': d.capaciteProduction,
-            'Origine matières premières': d.origineMatieresPremieres || 'N/A',
-            'Transformation au Niger': d.transformationAuNiger || 'N/A',
-            'Innovation': d.innovation || 'N/A',
-            'Régularité approvisionnement': d.regulariteApprovisionnement || 'N/A',
-            'Adaptation demande': d.adaptationDemandeCroissante || 'N/A',
-            'Certificat conformité': d.certificatConformite || 'N/A',
-            'Expérience antérieure': d.experienceAnterieure,
-            'Statut': d.status,
-            'Date de création': new Date(d.createdAt).toLocaleDateString('fr-FR'),
-          }));
-
-          // Créer le workbook et la worksheet
-          const wb = XLSX.utils.book_new();
-          const ws = XLSX.utils.json_to_sheet(excelData);
-
-          // Ajuster la largeur des colonnes
-          const colWidths = [
-            { wch: 15 }, // N° Référence
-            { wch: 15 }, // Prénom
-            { wch: 15 }, // Nom
-            { wch: 25 }, // Email
-            { wch: 15 }, // Téléphone
-            { wch: 8 },  // Âge
-            { wch: 8 },  // Sexe
-            { wch: 15 }, // Nationalité
-            { wch: 30 }, // Adresse
-            { wch: 25 }, // Entreprise
-            { wch: 20 }, // Registre Commerce
-            { wch: 25 }, // Secteur
-            { wch: 15 }, // Localisation
-            { wch: 15 }, // Région
-            { wch: 20 }, // Site préférence
-            { wch: 15 }, // Taille kiosque
-            { wch: 15 }, // Nb employés
-            { wch: 15 }, // Nb femmes
-            { wch: 15 }, // Nb jeunes
-            { wch: 40 }, // Produits
-            { wch: 30 }, // Capacité production
-            { wch: 25 }, // Origine matières
-            { wch: 20 }, // Transformation
-            { wch: 30 }, // Innovation
-            { wch: 20 }, // Régularité
-            { wch: 20 }, // Adaptation
-            { wch: 20 }, // Certificat
-            { wch: 40 }, // Expérience
-            { wch: 15 }, // Statut
-            { wch: 15 }, // Date création
-          ];
-          ws['!cols'] = colWidths;
-
-          // Ajouter la feuille au workbook
-          XLSX.utils.book_append_sheet(wb, ws, 'Demandes');
-
-          // Générer le fichier Excel
-          const fileName = `Demandes_Exposants_${new Date().toISOString().split('T')[0]}.xlsx`;
-          XLSX.writeFile(wb, fileName);
-
-          alert(`${data.data.length} demande(s) exportée(s) avec succès !`);
-        }
+      const demandes = await fetchAllDemandes(token);
+      if (demandes.length === 0) {
+        alert('Aucune demande à exporter');
+        return;
       }
+
+      // Import dynamique de xlsx
+      const XLSX = await import('xlsx');
+      
+      // Préparer les données pour Excel
+      const excelData = demandes.map((d: any) => ({
+        'N° Référence': d.numeroReference,
+        'Prénom': d.prenom,
+        'Nom': d.nom,
+        'Email': d.email || 'N/A',
+        'Téléphone': d.telephone,
+        'Âge': d.age,
+        'Sexe': d.sexe,
+        'Nationalité': d.nationalite,
+        'Adresse': d.adresse,
+        'Entreprise': d.nomEntreprise || 'N/A',
+        'Registre Commerce': d.registreCommerce || 'N/A',
+        'Secteur d\'activité': d.secteurActivite,
+        'Localisation': d.localisation,
+        'Région': d.region || 'N/A',
+        'Site de préférence': d.sitePreference,
+        'Taille kiosque': d.tailleKiosque,
+        'Nombre d\'employés': d.nombreEmployes,
+        'Nombre de femmes': d.nombreFemmes || 0,
+        'Nombre de jeunes': d.nombreJeunes || 0,
+        'Produits proposés': d.produitsProposes,
+        'Capacité de production': d.capaciteProduction,
+        'Origine matières premières': d.origineMatieresPremieres || 'N/A',
+        'Transformation au Niger': d.transformationAuNiger || 'N/A',
+        'Innovation': d.innovation || 'N/A',
+        'Régularité approvisionnement': d.regulariteApprovisionnement || 'N/A',
+        'Adaptation demande': d.adaptationDemandeCroissante || 'N/A',
+        'Certificat conformité': d.certificatConformite || 'N/A',
+        'Expérience antérieure': d.experienceAnterieure,
+        'Statut': d.status,
+        'Date de création': new Date(d.createdAt).toLocaleDateString('fr-FR'),
+      }));
+
+      // Créer le workbook et la worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Ajuster la largeur des colonnes
+      const colWidths = [
+        { wch: 15 }, // N° Référence
+        { wch: 15 }, // Prénom
+        { wch: 15 }, // Nom
+        { wch: 25 }, // Email
+        { wch: 15 }, // Téléphone
+        { wch: 8 },  // Âge
+        { wch: 8 },  // Sexe
+        { wch: 15 }, // Nationalité
+        { wch: 30 }, // Adresse
+        { wch: 25 }, // Entreprise
+        { wch: 20 }, // Registre Commerce
+        { wch: 25 }, // Secteur
+        { wch: 15 }, // Localisation
+        { wch: 15 }, // Région
+        { wch: 20 }, // Site préférence
+        { wch: 15 }, // Taille kiosque
+        { wch: 15 }, // Nb employés
+        { wch: 15 }, // Nb femmes
+        { wch: 15 }, // Nb jeunes
+        { wch: 40 }, // Produits
+        { wch: 30 }, // Capacité production
+        { wch: 25 }, // Origine matières
+        { wch: 20 }, // Transformation
+        { wch: 30 }, // Innovation
+        { wch: 20 }, // Régularité
+        { wch: 20 }, // Adaptation
+        { wch: 20 }, // Certificat
+        { wch: 40 }, // Expérience
+        { wch: 15 }, // Statut
+        { wch: 15 }, // Date création
+      ];
+      ws['!cols'] = colWidths;
+
+      // Ajouter la feuille au workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Demandes');
+
+      // Générer le fichier Excel
+      const fileName = `Demandes_Exposants_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      alert(`${demandes.length} demande(s) exportée(s) avec succès !`);
     } catch (error) {
       console.error('Erreur lors de l\'exportation:', error);
       alert('Erreur lors de l\'exportation des données');
@@ -1640,6 +1666,20 @@ function DemandesContent() {
             <option value="APPROUVE">Approuvé</option>
             <option value="REJETE">Rejeté</option>
           </select>
+
+          {/* Filtre par traitement utilisateur */}
+          <select
+            value={handledByMeFilter}
+            onChange={(e) => {
+              setHandledByMeFilter(e.target.value as 'all' | 'handled' | 'unhandled');
+              setPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+          >
+            <option value="all">Toutes les demandes</option>
+            <option value="handled">Traitées par moi</option>
+            <option value="unhandled">Non traitées par moi</option>
+          </select>
           
           <div className="h-6 w-px bg-gray-300"></div>
           
@@ -1682,6 +1722,25 @@ function DemandesContent() {
               }
             </div>
           )}
+
+          <div className="h-6 w-px bg-gray-300"></div>
+
+          {/* Taille de page */}
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium text-gray-700">Par page:</label>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(parseInt(e.target.value, 10));
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1724,6 +1783,11 @@ function DemandesContent() {
                     }`}>
                       {demande.statut}
                     </span>
+                    <div className={`mt-1 text-xs font-medium ${
+                      demande.hasUserEvaluated ? 'text-green-700' : 'text-gray-500'
+                    }`}>
+                      {demande.hasUserEvaluated ? 'Évalué par vous' : 'Non évalué'}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
@@ -1755,7 +1819,7 @@ function DemandesContent() {
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              Page {page} sur {totalPages}
+              Page {page} sur {totalPages} · {pageSize} par page
             </div>
             <div className="flex items-center space-x-2">
               <button
