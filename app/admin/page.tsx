@@ -81,355 +81,312 @@ const fetchAllDemandes = async (token: string) => {
 };
 
 // PDF Generation Function
-const generateApprovalPDF = async (demande: any, evaluationScores: any, totalScore: number) => {
-  // Vérifier si jsPDF est disponible
+const generateApprovalPDF = async (demande: any, evaluationScores: any, totalScore: number, allEvaluations?: any[]) => {
   if (typeof window === 'undefined') return;
-  
+
   try {
-    // Import dynamique des modules nécessaires
     const [jsPDFModule, QRCodeModule] = await Promise.all([
       import('jspdf'),
       import('qrcode')
     ]);
-    
+
     const jsPDF = jsPDFModule.default;
     const QRCode = QRCodeModule.default;
-    
-    // Configuration PDF pour optimisation de taille
+
     const doc = new jsPDF({
       compress: true,
       unit: 'mm',
       format: 'a4'
     });
-      
+
+    // Couleurs
+    const GREEN = { r: 25, g: 135, b: 84 };
+    const DARK = { r: 30, g: 30, b: 30 };
+    const GRAY = { r: 100, g: 100, b: 100 };
+    const pageW = 210;
+    const margin = 20;
+    const contentW = pageW - margin * 2;
+
     const currentDate = new Date().toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
     });
 
-    // Générer le QR Code avec les informations de l'approbation
-    const qrData = JSON.stringify({
+    const ref = `MR-${demande.id}-${new Date().getFullYear()}`;
+
+    const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify({
       id: demande.id,
       nom: demande.nom,
       entreprise: demande.entreprise,
       date: currentDate,
       score: totalScore.toFixed(1),
-      reference: `MR-${demande.id}-${new Date().getFullYear()}`
-    });
-    
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-      width: 150,
-      margin: 1,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    });
+      reference: ref
+    }), { width: 150, margin: 1, color: { dark: '#000000', light: '#FFFFFF' } });
 
-    // En-tête avec logo très agrandi et bien visible - Hauteur optimisée
-    doc.setFillColor(25, 135, 84); // Vert
-    doc.rect(0, 0, 210, 75, 'F');
-    
-    // Ajouter le logo centré et très agrandi avec fond blanc pour meilleure visibilité
+    // ========== EN-TETE ==========
+    doc.setFillColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.rect(0, 0, pageW, 40, 'F');
+
+    // Logo
     try {
-      // Le logo sera chargé depuis le dossier public
       const logoImg = new Image();
       logoImg.src = '/marchedela.png';
       await new Promise((resolve) => {
         logoImg.onload = resolve;
-        logoImg.onerror = resolve; // Continue même si le logo ne charge pas
-        setTimeout(resolve, 2000); // Timeout augmenté à 2 secondes pour assurer le chargement
+        logoImg.onerror = resolve;
+        setTimeout(resolve, 2000);
       });
-      
       if (logoImg.complete && logoImg.naturalHeight !== 0) {
-        // Calculer les dimensions pour maintenir le ratio d'aspect - Logo très grand et visible
-        const maxWidth = 90;  // Augmenté à 90mm pour être très visible
-        const maxHeight = 60; // Hauteur de 60mm
         const imgRatio = logoImg.naturalWidth / logoImg.naturalHeight;
-        
-        let imgWidth = maxWidth;
-        let imgHeight = maxWidth / imgRatio;
-        
-        if (imgHeight > maxHeight) {
-          imgHeight = maxHeight;
-          imgWidth = maxHeight * imgRatio;
-        }
-        
-        // Centrer le logo horizontalement sur la page (largeur page A4 = 210mm)
-        const xOffset = (210 - imgWidth) / 2;
-        const yOffset = 7; // Positionné avec un peu d'espace en haut
-        
-        // Fond blanc derrière le logo pour assurer la visibilité
-        doc.setFillColor(255, 255, 255);
-        const padding = 3;
-        doc.roundedRect(xOffset - padding, yOffset - padding, imgWidth + (padding * 2), imgHeight + (padding * 2), 2, 2, 'F');
-        
-        // Ajouter le logo avec compression optimale
-        doc.addImage(logoImg, 'PNG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
+        let imgW = 40;
+        let imgH = imgW / imgRatio;
+        if (imgH > 30) { imgH = 30; imgW = 30 * imgRatio; }
+        doc.addImage(logoImg, 'PNG', margin, 5, imgW, imgH, undefined, 'FAST');
       }
     } catch (error) {
       console.log('Logo non disponible:', error);
     }
-    
-    // Texte positionné juste sous le logo - espace réduit avec fond semi-transparent pour lisibilité
+
     doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MARCHÉ DE LA RÉFONDATION', 105, 54, { align: 'center' });
-    
-    doc.setFontSize(11);
+    doc.text('MARCHE DE LA REFONDATION', pageW - margin, 15, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.text('Centenaire de Niamey 2026', 105, 61, { align: 'center' });
-    
-    doc.setFontSize(9);
-    doc.text('Ministère du Commerce et de l\'Industrie', 105, 68, { align: 'center' });
-
-    // Titre principal sous l'en-tête - Design élégant noir sur blanc
-    // Encadré blanc pour le titre - agrandi pour plus d'espace
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(30, 78, 150, 20, 4, 4, 'F');
-    
-    // Bordure noire élégante autour du titre
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(1);
-    doc.roundedRect(30, 78, 150, 20, 4, 4, 'S');
-    
-    // Bordure intérieure décorative
-    doc.setDrawColor(25, 135, 84);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(32, 80, 146, 16, 3, 3, 'S');
-    
-    // Titre en noir, plus grand et plus visible avec espacement des caractères
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    // Diviser le texte en deux lignes pour plus d'élégance et d'espace
-    doc.text('ATTESTATION', 105, 86, { align: 'center', charSpace: 2 });
-    doc.text('D\'APPROBATION', 105, 92, { align: 'center', charSpace: 2 });
-
-    // Lignes décoratives de séparation
-    doc.setDrawColor(25, 135, 84);
-    doc.setLineWidth(0.5);
-    doc.line(20, 100, 190, 100);
-    doc.setLineWidth(0.3);
-    doc.line(20, 102, 190, 102);
-
-    // Numéro et date - Ajustés pour éviter le chevauchement avec les lignes
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text(`N° ${demande.id}/MR/${new Date().getFullYear()}`, 20, 107);
-    doc.text(`Niamey, le ${currentDate}`, 190, 107, { align: 'right' });
-
-    // Corps du document avec texte d'introduction élégant
-    let yPos = 109;
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(60, 60, 60);
-    doc.text('Le Comité d\'Évaluation du Marché de la Réfondation,', 105, yPos, { align: 'center' });
-    yPos += 6;
-    doc.text('Après étude et évaluation du dossier de candidature,', 105, yPos, { align: 'center' });
-    yPos += 14;
-
-    // Encadré informations candidat - Design amélioré avec dégradé visuel
-    doc.setFillColor(245, 250, 255);
-    doc.roundedRect(15, yPos, 180, 48, 3, 3, 'F');
-    
-    // Bordure dorée/verte élégante
-    doc.setDrawColor(25, 135, 84);
-    doc.setLineWidth(0.8);
-    doc.roundedRect(15, yPos, 180, 48, 3, 3, 'S');
-    
-    // Barre décorative en haut de l'encadré
-    doc.setFillColor(25, 135, 84);
-    doc.roundedRect(15, yPos, 180, 8, 3, 3, 'F');
-
-    yPos += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(255, 255, 255);
-    doc.text('✓ CANDIDAT APPROUVÉ', 105, yPos, { align: 'center' });
-    
-    yPos += 8;
-    doc.setTextColor(50, 50, 50);
-    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    
-    // Informations en 2 colonnes
-    const leftCol = 25;
-    const rightCol = 110;
-    
-    // Colonne gauche
-    doc.text('Nom complet :', leftCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(demande.nom, leftCol + 28, yPos);
-    
-    yPos += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Entreprise :', leftCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(demande.entreprise, leftCol + 28, yPos);
-    
-    yPos += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Secteur :', leftCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(demande.secteur, leftCol + 28, yPos);
-    
-    // Colonne droite
-    yPos -= 12; // Revenir en haut pour la colonne droite
-    doc.setFont('helvetica', 'bold');
-    doc.text('Email :', rightCol, yPos);
-    doc.setFont('helvetica', 'normal');
+    doc.text('Centenaire de Niamey 2026', pageW - margin, 22, { align: 'right' });
     doc.setFontSize(8);
-    doc.text(demande.email, rightCol + 15, yPos);
-    
-    yPos += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Téléphone :', rightCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(demande.telephone, rightCol + 22, yPos);
-    
-    yPos += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Référence :', rightCol, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(`MR-${demande.id}-${new Date().getFullYear()}`, rightCol + 22, yPos);
+    doc.text('Republique du Niger', pageW - margin, 29, { align: 'right' });
 
-    yPos += 14;
-      
-    // Score d'évaluation - Design élégant avec badge
-    doc.setFillColor(236, 253, 243);
-    doc.roundedRect(15, yPos, 100, 28, 3, 3, 'F');
-    doc.setDrawColor(34, 197, 94);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(15, yPos, 100, 28, 3, 3, 'S');
-    
-    yPos += 7;
+    // ========== TITRE ==========
+    let y = 50;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text('RÉSULTAT DE L\'ÉVALUATION', 65, yPos, { align: 'center' });
-    
-    yPos += 8;
     doc.setFontSize(16);
-    doc.setTextColor(34, 197, 94);
-    doc.text(`${totalScore.toFixed(1)} / 100`, 65, yPos, { align: 'center' });
-    
-    yPos += 6;
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+    doc.text('ATTESTATION D\'APPROBATION', pageW / 2, y, { align: 'center' });
+
+    // Ligne sous le titre
+    y += 3;
+    doc.setDrawColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.setLineWidth(0.5);
+    doc.line(70, y, 140, y);
+
+    // Reference et date
+    y += 8;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+    doc.text(`Ref: ${ref}`, margin, y);
+    doc.text(`Niamey, le ${currentDate}`, pageW - margin, y, { align: 'right' });
+
+    // ========== INTRODUCTION ==========
+    y += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Le Comite d\'Evaluation du Marche de la Refondation,', pageW / 2, y, { align: 'center' });
+    y += 5;
+    doc.text('apres etude et evaluation du dossier de candidature, certifie que :', pageW / 2, y, { align: 'center' });
+
+    // ========== INFORMATIONS DU CANDIDAT ==========
+    y += 10;
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(255, 255, 255);
-    doc.setFillColor(34, 197, 94);
-    doc.roundedRect(30, yPos - 4, 70, 8, 2, 2, 'F');
-    doc.text('✓ QUALIFIÉ', 65, yPos, { align: 'center' });
+    doc.setFillColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.rect(margin, y, contentW, 7, 'F');
+    doc.text('CANDIDAT APPROUVE', pageW / 2, y + 5, { align: 'center' });
 
-    // QR Code avec design élégant
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(125, yPos - 26, 65, 28, 3, 3, 'F');
-    doc.setDrawColor(200, 200, 200);
+    y += 10;
+    doc.setFontSize(9);
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+
+    const drawLine = (label: string, value: string, yy: number) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, margin, yy);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value || 'N/A', margin + 40, yy);
+    };
+
+    drawLine('Nom complet :', demande.nom, y);
+    y += 6;
+    drawLine('Entreprise :', demande.entreprise, y);
+    y += 6;
+    drawLine('Secteur :', demande.secteur, y);
+    y += 6;
+    drawLine('Email :', demande.email, y);
+    y += 6;
+    drawLine('Telephone :', demande.telephone, y);
+
+    // Separateur
+    y += 8;
+    doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.3);
-    doc.roundedRect(125, yPos - 26, 65, 28, 3, 3, 'S');
-    
-    doc.addImage(qrCodeDataUrl, 'PNG', 131, yPos - 24, 24, 24, undefined, 'FAST');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Scannez pour', 168, yPos - 16, { align: 'center' });
-    doc.text('authentifier', 168, yPos - 11, { align: 'center' });
-    doc.text('le document', 168, yPos - 6, { align: 'center' });
+    doc.line(margin, y, pageW - margin, y);
 
-    yPos += 14;
-      
-    // Section Décision avec encadré élégant
-    doc.setFillColor(255, 251, 235);
-    doc.roundedRect(15, yPos, 180, 42, 3, 3, 'F');
-    doc.setDrawColor(234, 179, 8);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(15, yPos, 180, 42, 3, 3, 'S');
-    
-    yPos += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(161, 98, 7);
-    doc.text('DÉCISION', 105, yPos, { align: 'center' });
-    
-    yPos += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(50, 50, 50);
-    
-    const decisionText = [
-      'D\'APPROUVER la demande de participation du candidat susmentionné',
-      'au Marché de la Réfondation - Centenaire de Niamey 2026.',
-      '',
-      'Le candidat est autorisé à commercialiser ses produits conformément',
-      'au règlement intérieur dans l\'un des deux sites officiels.'
-    ];
-    
-    decisionText.forEach(line => {
-      doc.text(line, 105, yPos, { align: 'center' });
-      yPos += 5;
-    });
-
-    yPos += 12;
-
-    // Signatures avec design élégant
-    doc.setTextColor(60, 60, 60);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    
-    // Signature gauche
-    doc.text('Le Président du Jury', 52, yPos, { align: 'center' });
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(200, 200, 200);
-    doc.line(25, yPos + 3, 80, yPos + 3);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text('Signature et Cachet', 52, yPos + 18, { align: 'center' });
-    
-    // Signature droite
+    // ========== RESULTATS DE L'EVALUATION ==========
+    y += 8;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    doc.text('Le Directeur du Marché', 158, yPos, { align: 'center' });
-    doc.line(130, yPos + 3, 185, yPos + 3);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text('Signature et Cachet', 158, yPos + 18, { align: 'center' });
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+    doc.text('RESULTATS DE L\'EVALUATION', margin, y);
 
-    // Pied de page élégant avec ligne décorative
-    yPos = 275;
-    doc.setDrawColor(25, 135, 84);
-    doc.setLineWidth(0.3);
-    doc.line(20, yPos, 190, yPos);
-    
-    yPos += 5;
-    doc.setFontSize(8);
-    doc.setTextColor(25, 135, 84);
+    y += 6;
+
+    if (allEvaluations && allEvaluations.length > 0) {
+      const juryEvals = allEvaluations.filter((e: any) => e.evaluateur.role === 'JURY' || e.evaluateur.role === 'PRESIDENT_JURY');
+
+      if (juryEvals.length > 0) {
+        const col1W = contentW * 0.45;
+        const col2W = contentW * 0.25;
+        const col3W = contentW * 0.30;
+
+        // En-tete du tableau
+        doc.setFillColor(50, 55, 65);
+        doc.rect(margin, y, contentW, 7, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Membre du Jury', margin + 3, y + 5);
+        doc.text('Role', margin + col1W + 3, y + 5);
+        doc.text('Note / 100', margin + col1W + col2W + col3W / 2, y + 5, { align: 'center' });
+        y += 7;
+
+        // Lignes
+        juryEvals.forEach((evaluation: any, index: number) => {
+          const rowH = 7;
+          doc.setFillColor(index % 2 === 0 ? 248 : 255, index % 2 === 0 ? 249 : 255, index % 2 === 0 ? 252 : 255);
+          doc.rect(margin, y, contentW, rowH, 'F');
+          doc.setDrawColor(220, 225, 230);
+          doc.setLineWidth(0.2);
+          doc.line(margin, y + rowH, margin + contentW, y + rowH);
+
+          doc.setTextColor(DARK.r, DARK.g, DARK.b);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.text(`${evaluation.evaluateur.prenom} ${evaluation.evaluateur.nom}`, margin + 3, y + 5);
+
+          doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+          doc.setFontSize(7);
+          doc.text(evaluation.evaluateur.role === 'PRESIDENT_JURY' ? 'President' : 'Jury', margin + col1W + 3, y + 5);
+
+          const score = evaluation.scoreTotal;
+          doc.setTextColor(score >= 70 ? 22 : score >= 50 ? 202 : 220, score >= 70 ? 163 : score >= 50 ? 138 : 38, score >= 70 ? 74 : score >= 50 ? 4 : 38);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.text(score.toFixed(1), margin + col1W + col2W + col3W / 2, y + 5, { align: 'center' });
+
+          y += rowH;
+        });
+
+        // Note globale
+        y += 1;
+        doc.setFillColor(GREEN.r, GREEN.g, GREEN.b);
+        doc.rect(margin, y, contentW, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('NOTE GLOBALE (Moyenne)', margin + 3, y + 5.5);
+        doc.setFontSize(11);
+        doc.text(`${totalScore.toFixed(1)} / 100`, margin + col1W + col2W + col3W / 2, y + 5.5, { align: 'center' });
+        y += 12;
+      }
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+      doc.text('Note globale :', margin, y);
+      doc.setFontSize(14);
+      doc.setTextColor(22, 163, 74);
+      doc.text(`${totalScore.toFixed(1)} / 100`, margin + 35, y);
+      y += 12;
+    }
+
+    // ========== STATUT : QUALIFIE ==========
+    doc.setFillColor(22, 163, 74);
+    doc.rect(margin, y, 45, 10, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text('Marché de la Réfondation - Centenaire de Niamey 2026', 105, yPos, { align: 'center' });
-    yPos += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(120, 120, 120);
-    doc.text('Ministère du Commerce et de l\'Industrie', 105, yPos, { align: 'center' });
-    yPos += 4;
-    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(11);
+    doc.text('QUALIFIE', margin + 22.5, y + 7, { align: 'center' });
+
+    // QR Code
+    const qrSize = 20;
+    doc.addImage(qrCodeDataUrl, 'PNG', pageW - margin - qrSize, y - 3, qrSize, qrSize, undefined, 'FAST');
     doc.setFontSize(6);
-    doc.text(`Document authentique - Référence: MR-${demande.id}-${new Date().getFullYear()} - Vérifiable par QR Code`, 105, yPos, { align: 'center' });
+    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Scannez pour verifier', pageW - margin - qrSize / 2, y + qrSize, { align: 'center' });
 
-    // Télécharger le PDF
-    const fileName = `Approbation_${demande.entreprise.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-    doc.save(fileName);
+    y += 16;
+
+    // ========== DECISION ==========
+    doc.setDrawColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageW - margin, y);
+
+    y += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+    doc.text('DECISION OFFICIELLE', margin, y);
+
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const decisionText = doc.splitTextToSize(
+      'D\'APPROUVER la demande de participation du candidat susmentionne au Marche de la Refondation - Centenaire de Niamey 2026. Le candidat est autorise a commercialiser ses produits conformement au reglement interieur dans l\'un des deux sites officiels.',
+      contentW
+    );
+    doc.text(decisionText, margin, y);
+    y += decisionText.length * 4.5 + 5;
+
+    // ========== SIGNATURES ==========
+    y += 5;
+    const sigLeftX = margin + contentW * 0.25;
+    const sigRightX = margin + contentW * 0.75;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+    doc.text('Le President du Jury', sigLeftX, y, { align: 'center' });
+    doc.text('Le Directeur du Marche', sigRightX, y, { align: 'center' });
+
+    y += 15;
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.line(sigLeftX - 25, y, sigLeftX + 25, y);
+    doc.line(sigRightX - 25, y, sigRightX + 25, y);
+
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+    doc.text('Signature et Cachet', sigLeftX, y, { align: 'center' });
+    doc.text('Signature et Cachet', sigRightX, y, { align: 'center' });
+
+    // ========== PIED DE PAGE ==========
+    const footerY = 280;
+    doc.setDrawColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.setLineWidth(0.4);
+    doc.line(margin, footerY, pageW - margin, footerY);
+
+    doc.setFontSize(7);
+    doc.setTextColor(GREEN.r, GREEN.g, GREEN.b);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Marche de la Refondation - Centenaire de Niamey 2026', pageW / 2, footerY + 4, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+    doc.text('Ministere du Commerce et de l\'Industrie - Republique du Niger', pageW / 2, footerY + 8, { align: 'center' });
+    doc.text(`Document authentique - Reference: ${ref} - Verifiable par QR Code`, pageW / 2, footerY + 12, { align: 'center' });
+
+    // Telecharger
+    doc.save(`Approbation_${demande.entreprise.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
   } catch (error) {
-    console.error('Erreur lors de la génération du PDF:', error);
-    alert('Erreur lors de la génération du PDF. Assurez-vous que jsPDF est installé.');
+    console.error('Erreur lors de la generation du PDF:', error);
+    alert('Erreur lors de la generation du PDF.');
   }
 };
 
@@ -1541,6 +1498,15 @@ function DemandesContent() {
   };
 
   const selectedDemande = demandes.find(d => d.id === selectedDemandeId);
+  const showingCount = demandes.length;
+  const pageStart = totalDemandes === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = Math.min(page * pageSize, totalDemandes);
+  const hasActiveFilters = Boolean(searchQuery || statusFilter || handledByMeFilter !== 'all');
+  const pageNumbers: number[] = [];
+  const pageWindow = 2;
+  const startPage = Math.max(1, page - pageWindow);
+  const endPage = Math.min(totalPages, page + pageWindow);
+  for (let p = startPage; p <= endPage; p += 1) pageNumbers.push(p);
 
   if (selectedDemande) {
     return (
@@ -1567,13 +1533,36 @@ function DemandesContent() {
 
   return (
     <div className="space-y-6">
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6">
+        <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-200/40 blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Demandes d'exposants</h2>
+            <p className="text-sm text-gray-600">
+              Suivi, tri et evaluation des dossiers en un coup d'oeil.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="rounded-full bg-white/80 px-3 py-1 text-gray-700 shadow-sm ring-1 ring-emerald-100">
+              Total: <strong>{totalDemandes}</strong>
+            </span>
+            <span className="rounded-full bg-white/80 px-3 py-1 text-gray-700 shadow-sm ring-1 ring-emerald-100">
+              Affichees: <strong>{showingCount}</strong>
+            </span>
+            <span className="rounded-full bg-white/80 px-3 py-1 text-gray-700 shadow-sm ring-1 ring-emerald-100">
+              {pageStart}-{pageEnd}
+            </span>
+          </div>
+        </div>
+      </div>
       {/* Actions Bar avec filtres et tri */}
-      <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
+      <div className="bg-white rounded-2xl shadow-sm p-5 space-y-5 border border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <button 
               onClick={fetchDemandes}
-              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-sm"
             >
               <FaSearch />
               <span>Rafraîchir</span>
@@ -1581,7 +1570,7 @@ function DemandesContent() {
             <button 
               onClick={handleExportExcel}
               disabled={exporting}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {exporting ? (
                 <>
@@ -1602,7 +1591,7 @@ function DemandesContent() {
         </div>
         
         {/* Barre de recherche */}
-        <div className="flex items-center gap-4 pb-4 border-b">
+        <div className="flex items-center gap-4 pb-4 border-b border-dashed">
           <div className="flex-1 relative">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -1616,7 +1605,7 @@ function DemandesContent() {
                   setPage(1); // Réinitialiser à la page 1
                 }
               }}
-              className="w-full pl-10 pr-24 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-24 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50/50"
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
               {searchInput && (
@@ -1644,6 +1633,39 @@ function DemandesContent() {
             </div>
           </div>
         </div>
+
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+            <span className="font-medium text-gray-700">Filtres actifs:</span>
+            {searchQuery && (
+              <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700 ring-1 ring-blue-100">
+                Recherche: {searchQuery}
+              </span>
+            )}
+            {statusFilter && (
+              <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700 ring-1 ring-amber-100">
+                Statut: {statusFilter}
+              </span>
+            )}
+            {handledByMeFilter !== 'all' && (
+              <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700 ring-1 ring-emerald-100">
+                {handledByMeFilter === 'handled' ? 'Traitees par moi' : 'Non traitees par moi'}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setSearchQuery('');
+                setStatusFilter('');
+                setHandledByMeFilter('all');
+                setPage(1);
+              }}
+              className="ml-1 rounded-full border border-gray-200 px-2 py-1 text-gray-600 hover:bg-gray-50"
+            >
+              Reinitialiser
+            </button>
+          </div>
+        )}
         
         {/* Filtres et Tri */}
         <div className="flex flex-wrap items-center gap-4 pt-4 border-t">
@@ -1745,9 +1767,10 @@ function DemandesContent() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50/90 border-b sticky top-0 z-10 backdrop-blur">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
@@ -1757,17 +1780,27 @@ function DemandesContent() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
+            </thead>
+            <tbody className="divide-y divide-gray-200">
             {demandes.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                  Aucune demande trouvée
+                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                      <FaClipboardList />
+                    </div>
+                    <p className="font-medium text-gray-700">Aucune demande trouvée</p>
+                    <p className="text-sm text-gray-500">Essayez un autre filtre ou rafraîchissez la liste.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
-              demandes.map((demande: any) => (
-                <tr key={demande.id} className="hover:bg-gray-50">
+              demandes.map((demande: any, index: number) => (
+                <tr
+                  key={demande.id}
+                  className="group hover:bg-gray-50 transition-colors animate-row"
+                  style={{ animationDelay: `${index * 35}ms` }}
+                >
                   <td className="px-6 py-4 text-sm text-gray-900">{demande.id}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{demande.nom}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{demande.entreprise}</td>
@@ -1793,7 +1826,7 @@ function DemandesContent() {
                     <div className="flex items-center space-x-2">
                       <button 
                         onClick={() => setSelectedDemandeId(demande.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" 
+                        className="p-2 text-blue-600 bg-blue-50/60 hover:bg-blue-100 rounded-lg transition-colors" 
                         title="Voir et Évaluer"
                       >
                         <FaEye />
@@ -1801,7 +1834,7 @@ function DemandesContent() {
                       {demande.statusBrut === 'APPROUVE' && evaluations[demande.id] && (
                         <button 
                           onClick={() => handleDownloadAttestation(demande)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg" 
+                          className="p-2 text-green-600 bg-green-50/60 hover:bg-green-100 rounded-lg transition-colors" 
                           title="Télécharger l'Attestation"
                         >
                           <FaFilePdf />
@@ -1814,6 +1847,7 @@ function DemandesContent() {
             )}
           </tbody>
         </table>
+        </div>
         
         {/* Pagination */}
         {totalPages > 1 && (
@@ -1823,12 +1857,30 @@ function DemandesContent() {
             </div>
             <div className="flex items-center space-x-2">
               <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Debut
+              </button>
+              <button
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
                 className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Précédent
               </button>
+              {pageNumbers.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-1 border rounded-lg transition-colors ${
+                    p === page ? 'bg-primary-600 text-white border-primary-600' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
               <button
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
@@ -1836,10 +1888,26 @@ function DemandesContent() {
               >
                 Suivant
               </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Fin
+              </button>
             </div>
           </div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes rise {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-row {
+          animation: rise 320ms ease-out both;
+        }
+      `}</style>
     </div>
   );
 }
@@ -2218,7 +2286,12 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
   };
 
   const handleDownloadPDF = () => {
-    generateApprovalPDF(demande, evaluationScores, totalScore);
+    // Calculer la note globale (moyenne de toutes les évaluations des jurys)
+    const juryEvals = existingEvaluations.filter((e: any) => e.evaluateur.role === 'JURY' || e.evaluateur.role === 'PRESIDENT_JURY');
+    const globalScore = juryEvals.length > 0
+      ? juryEvals.reduce((sum: number, e: any) => sum + e.scoreTotal, 0) / juryEvals.length
+      : totalScore;
+    generateApprovalPDF(demande, evaluationScores, globalScore, existingEvaluations);
   };
 
   const totalScore = calculateTotalScore();
@@ -2976,11 +3049,26 @@ function DemandeDetailView({ demande, onBack }: { demande: any; onBack: () => vo
                 {decision === 'approved' ? 'Demande Approuvée !' : 'Demande Rejetée'}
               </h4>
               <p className="text-gray-700 mb-4">
-                {decision === 'approved' 
+                {decision === 'approved'
                   ? `${demande.nom} a été accepté(e) comme exposant. Un email de confirmation sera envoyé.`
                   : `La demande de ${demande.nom} a été rejetée. Un email de notification sera envoyé.`
                 }
               </p>
+              {/* Note globale - moyenne de tous les jurys */}
+              {existingEvaluations.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-gray-600 mb-2 font-medium">Note globale (moyenne de tous les jurys)</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-3xl font-bold text-primary-600">
+                      {(existingEvaluations.filter((e: any) => e.evaluateur.role === 'JURY' || e.evaluateur.role === 'PRESIDENT_JURY').reduce((sum: number, e: any) => sum + e.scoreTotal, 0) / existingEvaluations.filter((e: any) => e.evaluateur.role === 'JURY' || e.evaluateur.role === 'PRESIDENT_JURY').length).toFixed(1)}
+                    </span>
+                    <span className="text-lg text-gray-500">/ 100</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 text-center">
+                    Basée sur {existingEvaluations.filter((e: any) => e.evaluateur.role === 'JURY' || e.evaluateur.role === 'PRESIDENT_JURY').length} évaluation(s)
+                  </p>
+                </div>
+              )}
               {decision === 'approved' && (
                 <div className="mb-6">
                   <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">

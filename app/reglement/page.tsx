@@ -143,29 +143,27 @@ export default function ReglementPage() {
             doc.addPage();
             yPosition = 20;
           }
-          const itemLines = doc.splitTextToSize(`• ${item}`, textWidth - 5);
-          doc.text(itemLines, margin + 5, yPosition);
+          const itemLines = doc.splitTextToSize(`- ${item}`, textWidth);
+          doc.text(itemLines, margin, yPosition);
           yPosition += itemLines.length * 5 + 2;
         });
       }
       
       // Procédure
       if (article.procedure) {
-        doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        article.procedure.forEach((proc) => {
+        article.procedure.forEach((proc, index) => {
           if (yPosition > 260) {
             doc.addPage();
             yPosition = 20;
           }
           doc.setFont('helvetica', 'bold');
-          const procTitreLines = doc.splitTextToSize(`${proc.titre} :`, textWidth - 5);
-          doc.text(procTitreLines, margin + 5, yPosition);
-          yPosition += procTitreLines.length * 5 + 2;
-          
+          doc.text(`${index + 1}. ${proc.titre}`, margin, yPosition);
+          yPosition += 5;
+
           doc.setFont('helvetica', 'normal');
-          const procDescLines = doc.splitTextToSize(proc.desc, textWidth - 10);
-          doc.text(procDescLines, margin + 10, yPosition);
+          const procDescLines = doc.splitTextToSize(proc.desc, textWidth);
+          doc.text(procDescLines, margin, yPosition);
           yPosition += procDescLines.length * 5 + 4;
         });
       }
